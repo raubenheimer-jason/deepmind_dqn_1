@@ -2,7 +2,7 @@
 from collections import deque
 import torch
 
-from game import init_game
+# from game import init_game
 from dqn import Network
 
 # Hyperparameters
@@ -23,9 +23,67 @@ FINAL_EXPLORATION_FRAME = int(1e6)  # num frames epsilon changes linearly
 REPLAY_START_SIZE = int(5e4)  # uniform random policy run before learning
 NO_OP_MAX = 30  # max num of "do nothing" actions performed by agent at the start of an episode
 
-if __name__ == "__main__":
-    print("Agent")
-    init_game()
+
+def game():
+    import gym
+
+    # env = gym.make("CartPole-v1", render_mode="human", new_step_api=True)
+    # obs = env.reset()
+    # for _ in range(10):
+    #     # env.render()
+    #     env.step(env.action_space.sample())  # take a random action
+
+    # return
+
+    # env = gym.make("Breakout-v4", new_step_api=True)
+    # env = gym.make("ALE/Breakout-v5",
+    #                render_mode='rgb_array',
+    #                new_step_api=True)
+    env = gym.make("ALE/Breakout-v5",
+                   render_mode="human",
+                   new_step_api=True)
+    # env.metadata["render_fps"] = 60
+    print(env.unwrapped.get_action_meanings())
+    print(env.action_space.n)
+
+    observation, info = env.reset(seed=42, return_info=True)
+    for _ in range(1000):
+        action = env.action_space.sample()  # random action
+        obs, reward, terminated, truncated, info = env.step(action)
+
+        if terminated or truncated:
+            # print(f"resetting {terminated}  {truncated}")
+            observation, info = env.reset(return_info=True)
+
+    env.close()
+
+    # import gym
+    # env = gym.make("CartPole-v1",
+    #                render_mode='rgb_array',
+    #                new_step_api=True)
+    # observation, info = env.reset(seed=42, return_info=True)
+
+    # for _ in range(1000):
+    #     action = env.action_space.sample()
+    #     obs, reward, terminated, truncated, info = env.step(action)
+
+    #     if terminated:
+    #         observation, info = env.reset(return_info=True)
+    # env.close()
+
+    # # print(env.render(mode='rgb_array'))
+    # for _ in range(1):
+    #     random_action = env.action_space.sample()
+    #     # print(random_action)
+    #     obs, reward, terminated, truncated, info = env.step(random_action)
+    #     # print()
+    # # print(env.render())
+
+
+def main():
+    game()
+
+    return
 
     # if gpu is to be used
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -35,6 +93,10 @@ if __name__ == "__main__":
     replay_mem = deque(maxlen=REPLAY_MEM_SIZE)
     # Need to fill the replay_mem (to REPLAY_START_SIZE) with the results from random actions
     #   -> maybe do this in the main loop and just select random until len(replay_mem) >= REPLAY_START_SIZE
+
+    # get number of actions
+    # https://stackoverflow.com/questions/63113154/how-to-check-out-actions-available-in-openai-gym-environment
+    num_actions = env.action_space.n
 
     # * Initialize action-value function Q with random weights Theta
     # initialise policy_net
@@ -69,3 +131,10 @@ if __name__ == "__main__":
     # *         Every C steps reset Q_hat = Q
     # *    End For
     # * End For
+
+
+if __name__ == "__main__":
+    # print("Agent")
+    # init_game()
+
+    main()
