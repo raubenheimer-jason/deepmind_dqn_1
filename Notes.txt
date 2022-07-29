@@ -1,0 +1,7 @@
+Replicating the algorithm in the paper: Human-level control through deep reinforcement learning
+
+Also used this tut for some help:
+https://www.youtube.com/watch?v=NP8pXZdU-5U&ab_channel=brthor
+
+PyTorch:
+https://pytorch.org/get-started/locally/
