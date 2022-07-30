@@ -1,14 +1,11 @@
 
 from collections import deque
 import torch
-
-# from game import init_game
 from dqn import Network
-
-# from game import preprocessing_t
 from game import Preprocessing
-
 import numpy as np
+import gym
+import matplotlib.pyplot as plt
 
 # Hyperparameters
 BATCH_SIZE = 32
@@ -30,101 +27,37 @@ NO_OP_MAX = 30  # max num of "do nothing" actions performed by agent at the star
 
 
 def game():
-    import gym
-    import matplotlib.pyplot as plt
-    from PIL import Image
 
-    # env = gym.make("CartPole-v1", render_mode="human", new_step_api=True)
-    # obs = env.reset()
-    # for _ in range(10):
-    #     # env.render()
-    #     env.step(env.action_space.sample())  # take a random action
-
-    # return
-
-    # env = gym.make("Breakout-v4", new_step_api=True)
-    # env = gym.make("ALE/Breakout-v5",
-    #                render_mode='rgb_array',
-    #                new_step_api=True)
     env = gym.make("ALE/Breakout-v5",
                    render_mode="rgb_array",  # or human
                    new_step_api=True)
-    # env.metadata["render_fps"] = 60
     print(env.unwrapped.get_action_meanings())
     print(env.action_space.n)
 
-    # observation, info = env.reset(seed=42, return_info=True)
     observation, info = env.reset(return_info=True)
     print(f"observation.shape: {observation.shape}")
 
-    p = Preprocessing(observation)
-    # p = Preprocessing()
+    preprocess = Preprocessing()
 
     for _ in range(3):
         action = env.action_space.sample()  # random action
-
-        # observation.shape = (210,160,3)
         observation, reward, terminated, truncated, info = env.step(action)
-        # step_1 = env.step(action)
-        # step_2 = env.step(action)
 
-        # preprocessing_t(observation)
-
-        obs_t = p.process(observation)
+        obs_t = preprocess.process(observation)
 
         print(obs_t.dtype)
         print(type(obs_t))
         print(obs_t.shape)
 
-        plt.imshow(obs_t.permute(1, 2, 0))
-        plt.show()
+        # plt.imshow(obs_t.permute(1, 2, 0))
+        # plt.show()
 
         if terminated or truncated:
-            # print(f"resetting {terminated}  {truncated}")
             observation, info = env.reset(return_info=True)
 
         print("------------------------------------")
 
-        continue
-
-        print(f"before: {observation.shape}")
-        plt.imshow(observation, cmap='hot', interpolation='nearest')
-        plt.show()
-        # g_obs = rgb2gray(observation)
-        proc = preprocessing(observation)
-        print(f"after: {proc.shape}")
-
-        print(proc[:, :, 0])
-
-        # print(g_obs[80, 80])
-        # plt.imshow(proc, cmap='hot', interpolation='nearest')
-        plt.matshow(proc)
-        # plt.imshow(proc, cmap='hot', interpolation='nearest')
-        plt.show()
-
     env.close()
-
-    # import gym
-    # env = gym.make("CartPole-v1",
-    #                render_mode='rgb_array',
-    #                new_step_api=True)
-    # observation, info = env.reset(seed=42, return_info=True)
-
-    # for _ in range(1000):
-    #     action = env.action_space.sample()
-    #     obs, reward, terminated, truncated, info = env.step(action)
-
-    #     if terminated:
-    #         observation, info = env.reset(return_info=True)
-    # env.close()
-
-    # # print(env.render(mode='rgb_array'))
-    # for _ in range(1):
-    #     random_action = env.action_space.sample()
-    #     # print(random_action)
-    #     obs, reward, terminated, truncated, info = env.step(random_action)
-    #     # print()
-    # # print(env.render())
 
 
 def main():

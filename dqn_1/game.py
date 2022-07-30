@@ -43,15 +43,17 @@ def rgb2gray(rgb):
 
 
 # class Preprocessing(torch.nn.Module):
-class Preprocessing():
-    def __init__(self):
+class Preprocessing:
+    def __init__(self, init_observation):
 
         # super(Preprocessing, self).__init__()
 
+        self.prev_obs = init_observation
+
         self.to_tensor = torchvision.transforms.ToTensor()
 
-        torchvision.transforms = torch.nn.Sequential(
-            # self.n = torch.nn.Sequential(
+        # torchvision.transforms = torch.nn.Sequential(
+        self.transform = torch.nn.Sequential(
             # convert to grayscale
             # https://pytorch.org/vision/stable/generated/torchvision.transforms.Grayscale.html#torchvision.transforms.Grayscale
             torchvision.transforms.Grayscale(),
@@ -61,9 +63,24 @@ class Preprocessing():
             torchvision.transforms.Resize([84, 84])
 
         )
-        self.scripted_transforms = torch.jit.script(torchvision.transforms)
+        # self.scripted_transforms = torch.jit.script(torchvision.transforms())
 
-    def process(self, obs):
+    def process(self, observation):
+
+        # # max value of current and prev frame pix
+        # if not self.prev_obs == None:
+        #     # if prev_obs isn't None
+        #     print("calc max")
+        #     obs = np.maximum(observation, self.prev_obs)
+        # else:
+        #     obs = observation
+
+        # max value of current and prev frame pix
+        obs = np.maximum(observation, self.prev_obs)
+
+        # obs = observation
+
+        self.prev_obs = observation
 
         # from H,W,C to C,H,W
         # https://pytorch.org/vision/stable/generated/torchvision.transforms.ToTensor.html#torchvision.transforms.ToTensor
@@ -72,10 +89,25 @@ class Preprocessing():
         # obs_t = torchvision.transforms.ToTensor(obs)
 
         # obs_t = torch.tensor(obs)
-        obs_t = self.scripted_transforms(obs_t)
-        # self.n(obs)
+        # obs_t = self.scripted_transforms(obs_t)
+        obs_t = self.transform(obs_t)
 
         return obs_t
+        # return obs
+
+    # def process(self, obs_1, obs_2):
+
+    #     # from H,W,C to C,H,W
+    #     # https://pytorch.org/vision/stable/generated/torchvision.transforms.ToTensor.html#torchvision.transforms.ToTensor
+    #     obs_t = self.to_tensor(obs)
+
+    #     # obs_t = torchvision.transforms.ToTensor(obs)
+
+    #     # obs_t = torch.tensor(obs)
+    #     obs_t = self.scripted_transforms(obs_t)
+    #     # self.n(obs)
+
+    #     return obs_t
 
 
 def preprocessing_t(obs):
