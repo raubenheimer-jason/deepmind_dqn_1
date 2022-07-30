@@ -5,6 +5,11 @@ import torch
 # from game import init_game
 from dqn import Network
 
+# from game import preprocessing_t
+from game import Preprocessing
+
+import numpy as np
+
 # Hyperparameters
 BATCH_SIZE = 32
 REPLAY_MEM_SIZE = int(1e6)
@@ -26,6 +31,8 @@ NO_OP_MAX = 30  # max num of "do nothing" actions performed by agent at the star
 
 def game():
     import gym
+    import matplotlib.pyplot as plt
+    from PIL import Image
 
     # env = gym.make("CartPole-v1", render_mode="human", new_step_api=True)
     # obs = env.reset()
@@ -40,20 +47,53 @@ def game():
     #                render_mode='rgb_array',
     #                new_step_api=True)
     env = gym.make("ALE/Breakout-v5",
-                   render_mode="human",
+                   render_mode="rgb_array",  # or human
                    new_step_api=True)
     # env.metadata["render_fps"] = 60
     print(env.unwrapped.get_action_meanings())
     print(env.action_space.n)
 
     observation, info = env.reset(seed=42, return_info=True)
-    for _ in range(1000):
+    print(f"observation.shape: {observation.shape}")
+
+    p = Preprocessing()
+
+    for _ in range(1):
         action = env.action_space.sample()  # random action
-        obs, reward, terminated, truncated, info = env.step(action)
+
+        # observation.shape = (210,160,3)
+        observation, reward, terminated, truncated, info = env.step(action)
+
+        # preprocessing_t(observation)
+
+        obs_t = p.process(observation)
+
+        print(obs_t.dtype)
+        print(type(obs_t))
+        print(obs_t.shape)
+
+        break
+
+        print(f"before: {observation.shape}")
+        plt.imshow(observation, cmap='hot', interpolation='nearest')
+        plt.show()
+        # g_obs = rgb2gray(observation)
+        proc = preprocessing(observation)
+        print(f"after: {proc.shape}")
+
+        print(proc[:, :, 0])
+
+        # print(g_obs[80, 80])
+        # plt.imshow(proc, cmap='hot', interpolation='nearest')
+        plt.matshow(proc)
+        # plt.imshow(proc, cmap='hot', interpolation='nearest')
+        plt.show()
 
         if terminated or truncated:
             # print(f"resetting {terminated}  {truncated}")
             observation, info = env.reset(return_info=True)
+
+        print("------------------------------------")
 
     env.close()
 
