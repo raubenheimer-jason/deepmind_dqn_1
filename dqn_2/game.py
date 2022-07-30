@@ -25,12 +25,13 @@ import matplotlib.pyplot as plt
 
 
 class Game:
-    def __init__(self, num_sequence_frames=4):
+    # def __init__(self, num_sequence_frames=4):
+    def __init__(self):
         """
         num_sequence_frames: the number of most recent frames stacked together
         """
 
-        self.num_sequence_frames = num_sequence_frames
+        # self.num_sequence_frames = num_sequence_frames
 
         self.env = gym.make("ALE/Breakout-v5",
                             render_mode="rgb_array",  # or human
@@ -41,8 +42,12 @@ class Game:
 
         self.preprocess = Preprocessing()
 
-    def get_sequence(self):
-        """ returns preprocessed sequence (of num_sequence_frames) """
+        # initial observation, the _p is for "preprocessed"
+        self.init_observation_p = self.preprocess.process(observation)
+
+    # def get_sequence(self):
+    def get_state(self):
+        """ returns preprocessed state (the observation) """
 
         # loop num_sequence_frames times
         #   need to get frame
