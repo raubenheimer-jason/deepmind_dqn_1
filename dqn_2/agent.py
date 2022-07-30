@@ -1,11 +1,12 @@
 
 from collections import deque
+import time
 import torch
 from dqn import Network
-from game import Preprocessing
+# from game import Preprocessing
+from game import Game, game_test
 import numpy as np
 import gym
-import matplotlib.pyplot as plt
 
 # Hyperparameters
 BATCH_SIZE = 32
@@ -13,7 +14,7 @@ REPLAY_MEM_SIZE = int(1e6)
 AGENT_HISTORY_LEN = 4  # Number of most recent frames given as input to the Q network
 TARGET_NET_UPDATE_FREQ = int(1e4)  # C
 GAMMA = 0.99  # discount factor used in Q-learning update
-ACTION_REPEAT = 4  # Agent only sees every 4th input frame
+ACTION_REPEAT = 4  # Agent only sees every 4th input frame (repeat last action)
 UPDATE_FREQ = 4  # Agent selects 4 actions between each pair of successive updates
 LEARNING_RATE = 0.25e-3  # learning rate used by RMSProp
 GRADIENT_MOMENTUM = 0.95  # RMSProp
@@ -26,48 +27,20 @@ REPLAY_START_SIZE = int(5e4)  # uniform random policy run before learning
 NO_OP_MAX = 30  # max num of "do nothing" actions performed by agent at the start of an episode
 
 
-def game():
-
-    env = gym.make("ALE/Breakout-v5",
-                   render_mode="rgb_array",  # or human
-                   new_step_api=True)
-    print(env.unwrapped.get_action_meanings())
-    print(env.action_space.n)
-
-    observation, info = env.reset(return_info=True)
-    print(f"observation.shape: {observation.shape}")
-
-    preprocess = Preprocessing()
-
-    for _ in range(3):
-        action = env.action_space.sample()  # random action
-        observation, reward, terminated, truncated, info = env.step(action)
-
-        obs_t = preprocess.process(observation)
-
-        print(obs_t.dtype)
-        print(type(obs_t))
-        print(obs_t.shape)
-
-        # plt.imshow(obs_t.permute(1, 2, 0))
-        # plt.show()
-
-        if terminated or truncated:
-            observation, info = env.reset(return_info=True)
-
-        print("------------------------------------")
-
-    env.close()
-
-
 def main():
-    game()
+    start = time.time()
+    game_test()
+
+    print(time.time()-start)
 
     return
 
     # if gpu is to be used
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print(f"device: {device}")
+
+    # game holds the env
+    game = Game()
 
     # * Initialize replay memory D to capacity N
     replay_mem = deque(maxlen=REPLAY_MEM_SIZE)

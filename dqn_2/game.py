@@ -21,9 +21,86 @@ import cv2
 import torchvision
 import torch
 
+import matplotlib.pyplot as plt
+
+
+class Game:
+    def __init__(self, num_sequence_frames=4):
+        """
+        num_sequence_frames: the number of most recent frames stacked together
+        """
+
+        self.num_sequence_frames = num_sequence_frames
+
+        self.env = gym.make("ALE/Breakout-v5",
+                            render_mode="rgb_array",  # or human
+                            new_step_api=True)
+
+        observation, info = self.env.reset(return_info=True)
+        print(f"observation.shape: {observation.shape}")
+
+        self.preprocess = Preprocessing()
+
+    def get_sequence(self):
+        """ returns preprocessed sequence (of num_sequence_frames) """
+
+        # loop num_sequence_frames times
+        #   need to get frame
+        #   apply preprocessing
+        #   append to return list
+        # return
+
+        preprocessed_seq = []
+
+        for _ in range(self.num_sequence_frames):
+            # get frame (observation) from env
+            # observation, reward, terminated, truncated, info
+            observation, _, _, _, _ = self.env.step(action)
+
 
 def init_game():
     print("init game")
+
+
+def game_test():
+
+    env = gym.make("ALE/Breakout-v5",
+                   render_mode="rgb_array",  # or human
+                   new_step_api=True)
+    # print(env.unwrapped.get_action_meanings())
+    # print(env.action_space.n)
+
+    observation, info = env.reset(return_info=True)
+    # print(f"observation.shape: {observation.shape}")
+
+    preprocess = Preprocessing()
+
+    observation, reward, terminated, truncated, info = env.step(1)
+
+    for _ in range(8):
+
+        obs_t = preprocess.process(observation)
+
+        # print(obs_t.dtype)
+        # print(type(obs_t))
+        # print(obs_t.shape)
+
+        plt.imshow(obs_t.permute(1, 2, 0))
+        # plt.show()
+        plt.pause(1)
+
+        if terminated or truncated:
+            observation, info = env.reset(return_info=True)
+
+        action = env.action_space.sample()  # random action
+        # observation, reward, terminated, truncated, info = env.step(action)
+        observation, reward, terminated, truncated, info = env.step(0)
+
+        # env.
+
+        # print("------------------------------------")
+
+    env.close()
 
 
 class Preprocessing:
