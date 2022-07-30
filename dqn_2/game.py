@@ -37,30 +37,55 @@ class Game:
                             render_mode="rgb_array",  # or human
                             new_step_api=True)
 
+        self.num_actions = self.env.action_space.n
+
         observation, info = self.env.reset(return_info=True)
         print(f"observation.shape: {observation.shape}")
 
         self.preprocess = Preprocessing()
 
+        self.current_obs = observation
+        # current observation, the _p is for "preprocessed"
+        self.current_obs_p = self.preprocess.process(observation)
+
+        self.reward = None
+        self.terminated = None
+        self.truncated = None
+
         # initial observation, the _p is for "preprocessed"
-        self.init_observation_p = self.preprocess.process(observation)
+        # self.init_observation_p = self.preprocess.process(observation)
 
-    # def get_sequence(self):
-    def get_state(self):
-        """ returns preprocessed state (the observation) """
+    def step(self, action):
+        """ calls env.step(action) and sets the self.current_obs_p, .reward, .terminated, .truncated """
+        # get frame (observation) from env
+        # observation, reward, terminated, truncated, info
+        observation, reward, terminated, truncated, _ = self.env.step(action)
 
-        # loop num_sequence_frames times
-        #   need to get frame
-        #   apply preprocessing
-        #   append to return list
-        # return
+        # self.current_obs = observation  # x
+        # # update current observation, the _p is for "preprocessed"
+        # self.current_obs_p = self.preprocess.process(observation)  # phi
+        # self.reward = reward
+        # self.terminated = terminated
+        # self.truncated = truncated
 
-        preprocessed_seq = []
+        return observation, reward
 
-        for _ in range(self.num_sequence_frames):
-            # get frame (observation) from env
-            # observation, reward, terminated, truncated, info
-            observation, _, _, _, _ = self.env.step(action)
+    # # def get_sequence(self):
+    # def get_state(self):
+    #     """ returns preprocessed state (the observation) """
+
+    #     # loop num_sequence_frames times
+    #     #   need to get frame
+    #     #   apply preprocessing
+    #     #   append to return list
+    #     # return
+
+    #     preprocessed_seq = []
+
+    #     for _ in range(self.num_sequence_frames):
+    #         # get frame (observation) from env
+    #         # observation, reward, terminated, truncated, info
+    #         observation, _, _, _, _ = self.env.step(action)
 
 
 def init_game():

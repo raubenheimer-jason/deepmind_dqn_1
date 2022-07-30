@@ -5,3 +5,6 @@ https://www.youtube.com/watch?v=NP8pXZdU-5U&ab_channel=brthor
 
 PyTorch:
 https://pytorch.org/get-started/locally/
+
+Maybe useful... not exactly correct through
+https://github.com/tjwhitaker/human-level-control-through-deep-reinforcement-learning

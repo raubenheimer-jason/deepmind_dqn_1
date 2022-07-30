@@ -1,5 +1,6 @@
 
 from collections import deque
+import random
 import time
 import torch
 from dqn import Network
@@ -9,8 +10,8 @@ import numpy as np
 import gym
 
 # Hyperparameters
-BATCH_SIZE = 32
-REPLAY_MEM_SIZE = int(1e6)
+# BATCH_SIZE = 32
+# REPLAY_MEM_SIZE = int(1e6)
 AGENT_HISTORY_LEN = 4  # Number of most recent frames given as input to the Q network
 TARGET_NET_UPDATE_FREQ = int(1e4)  # C
 GAMMA = 0.99  # discount factor used in Q-learning update
@@ -37,6 +38,7 @@ DECAY_SLOPE = (INITIAL_EXPLORATION-FINAL_EXPLORATION) / \
 
 class Agent:
     def __init__(self, device):
+
         self.device = device
 
         # total steps of training, used for epsilon (random action selection)
@@ -53,3 +55,17 @@ class Agent:
         # y=mx+c to for step<=FINAL_EXPLORATION_FRAME else epsilon=FINAL_EXPLORATION
         epsilon = DECAY_SLOPE*self.step + \
             1 if self.step <= FINAL_EXPLORATION_FRAME else FINAL_EXPLORATION
+
+        sample = random.random()
+
+        self.step += 1
+
+        if sample < epsilon:
+            action = random.randrange(2)
+            # return torch.tensor([[random.randrange(2)]], device=self.device, dtype=torch.long)
+        else:
+            with torch.no_grad():
+                action = "action from Q network..."
+                # return self.policy_net(state).max(1)[1].view(1, 1)
+
+        return action
