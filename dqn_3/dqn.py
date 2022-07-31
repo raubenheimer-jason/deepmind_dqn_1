@@ -63,7 +63,7 @@ class Network(nn.Module):
         self.net = nn.Sequential(conv_net, nn.Linear(512, self.num_actions))
 
     def forward(self, x):
-        pass
+        return self.net(x)
 
     # def select_action(self, step, phi_t):
     #     """ selects action, either random or from model """

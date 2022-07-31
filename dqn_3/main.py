@@ -28,6 +28,8 @@ FINAL_EXPLORATION_FRAME = int(1e6)  # num frames epsilon changes linearly
 
 REPLAY_START_SIZE = int(5e4)  # uniform random policy run before learning
 
+PRINT_INFO_FREQ = int(1e3)
+
 
 # DECAY_SLOPE = (1.0-0.1)/(0.0-1e6)
 # delta y over delta x
@@ -101,7 +103,8 @@ def main():
         for t in count():
             step += 1
 
-            print(f"step: {step}, t: {t}, episode: {episode}")
+            if step % PRINT_INFO_FREQ == 0:
+                print(f"step: {step}, t: {t}, episode: {episode}")
 
             # * With probability epsilon select a random action a_t
             # * otherwise select a_t = argmax_a Q(phi(s_t),a;Theta)
@@ -183,10 +186,15 @@ def select_action(num_actions, step, phi_t, policy_net):
         # random.random --> the interval [0, 1), which means greater than or equal to 0 and less than 1
         epsilon = 1
 
-    if random.random() < epsilon:
+    rand_sample = random.random()
+
+    if step >= REPLAY_START_SIZE:
+        print(f"epsilon: {epsilon}, rand_sample: {rand_sample}")
+
+    if rand_sample < epsilon:
         action = random.randrange(num_actions)
         # return torch.tensor([[random.randrange(2)]], device=self.device, dtype=torch.long)
-        print(f"random action: {action}")
+        # print(f"random action: {action}")
     else:
         with torch.no_grad():
             policy_q = policy_net(phi_t)
@@ -195,7 +203,7 @@ def select_action(num_actions, step, phi_t, policy_net):
             # actions = max_q_indices.detach().tolist()
             action = max_q_index.detach().tolist()
             # return self.policy_net(state).max(1)[1].view(1, 1)
-            print(f"policy_q action: {action}")
+            # print(f"policy_q action: {action}")
 
     return action
 
