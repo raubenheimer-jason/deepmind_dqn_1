@@ -31,29 +31,17 @@ class Game:
         num_sequence_frames: the number of most recent frames stacked together
         """
 
-        # self.num_sequence_frames = num_sequence_frames
-
-        self.env = gym.make("ALE/Breakout-v5",
-                            render_mode="rgb_array",  # or human
-                            new_step_api=True)
+        env = gym.make("ALE/Breakout-v5",
+                       render_mode="rgb_array",  # or human
+                       new_step_api=True)
+        env = gym.wrappers.ResizeObservation(env, (84, 84))
+        env = gym.wrappers.GrayScaleObservation(env)
+        self.env = gym.wrappers.FrameStack(env, 4, new_step_api=True)
+        #! need to add "max pix value" to observation...
 
         self.num_actions = self.env.action_space.n
 
-        observation, info = self.env.reset(return_info=True)
-        print(f"observation.shape: {observation.shape}")
-
-        self.preprocess = Preprocessing()
-
-        self.current_obs = observation
-        # current observation, the _p is for "preprocessed"
-        self.current_obs_p = self.preprocess.process(observation)
-
-        self.reward = None
-        self.terminated = None
-        self.truncated = None
-
-        # initial observation, the _p is for "preprocessed"
-        # self.init_observation_p = self.preprocess.process(observation)
+        self.env.reset(return_info=True)
 
     def step(self, action):
         """ calls env.step(action) and sets the self.current_obs_p, .reward, .terminated, .truncated """
@@ -113,10 +101,12 @@ def game_test():
     # print(env.unwrapped.get_action_meanings())
     # print(env.action_space.n)
 
+    print(f"env.observation_space: {env.observation_space}")
+    return
+
     observation, info = env.reset(return_info=True)
     # print(f"observation.shape: {observation.shape}")
 
-    print(f"env.observation_space: {env.observation_space}")
     print(f"env.reward_range: {env.reward_range}")
 
     # preprocess = Preprocessing()
