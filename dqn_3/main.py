@@ -30,7 +30,7 @@ FINAL_EXPLORATION = 0.1  # final value of epsilon in epsilon-greedy exploration
 FINAL_EXPLORATION_FRAME = int(1e6)  # num frames epsilon changes linearly
 
 REPLAY_START_SIZE = int(5e4)  # uniform random policy run before learning
-# REPLAY_START_SIZE = 33  # uniform random policy run before learning
+# REPLAY_START_SIZE = 35  # uniform random policy run before learning
 
 
 PRINT_INFO_FREQ = int(1e3)
@@ -180,11 +180,11 @@ def main():
 
         print(
             f"step: {step}, episode_reward[episode={episode}]: {episode_rewards[episode]}")
-        plt.clf()
-        plt.plot(episode_rewards)  # plotting by columns
-        plt.pause(0.0001)
+        # plt.clf()
+        # plt.plot(episode_rewards)  # plotting by columns
+        # plt.pause(0.0001)
 
-    plt.show()
+    # plt.show()
 
     # * End For
     # * End For
@@ -259,34 +259,108 @@ def calc_loss(minibatch, target_net, policy_net, device):
 
     """
 
-    #! could probably do this as "tensor operations" rather and a for loop...
-
     # phi_ts = [t[0] for t in minibatch]
     # a_ts = np.asarray([t[1] for t in minibatch])
     # r_ts = np.asarray([t[2] for t in minibatch])
     # phi_tplus1s = [t[3] for t in minibatch]
     # dones = np.asarray([t[4] for t in minibatch])
 
-    phi_ts = torch.stack(
-        [torch.as_tensor(t[0], device=device, dtype=torch.float32) for t in minibatch])
+    # phi_ts = torch.tensor(device=device, dtype=torch.float32)
+
+    # print(f"type(minibatch[0][0]): {type(minibatch[0][0])}")
+    # # print(f"type(minibatch[0][3]): {type(minibatch[0][3])}")
+
+    # # print(isinstance(obses[0], PytorchLazyFrames))
+
+    # # np.concatenate(t[0], axis=0)
+    # # phi_ts_np = np.stack([np.concatenate(t[0], axis=0) for t in minibatch])
+    # phi_ts_np = np.stack(np.concatenate(t[0], axis=0) for t in minibatch)
+    # # phi_tplus1s_np = np.stack([np.concatenate(t[3], axis=0)
+    # #                           for t in minibatch])
+    # phi_tplus1s_np = np.stack(np.concatenate(t[3], axis=0) for t in minibatch)
+
+    # print(f"phi_t_np.shape: {phi_ts_np.shape}")
+
+    # phi_ts = torch.as_tensor(phi_ts_np, device=device, dtype=torch.float32)
+    # # phi_ts = torch.stack(phi_t_lst)
+
+    # phi_tplus1_lst = [torch.as_tensor(
+    #     t[3], device=device, dtype=torch.float32) for t in minibatch]
+    # phi_tplus1s = torch.stack(phi_tplus1_lst)
+
+    # phi_t_lst = [torch.as_tensor(
+    #     t[0], device=device, dtype=torch.float32) for t in minibatch]
+    # phi_ts = torch.stack(phi_t_lst)
+
+    # phi_tplus1_lst = [torch.as_tensor(
+    #     t[3], device=device, dtype=torch.float32) for t in minibatch]
+    # phi_tplus1s = torch.stack(phi_tplus1_lst)
+
+    # for i, t in enumerate(minibatch):
+    #     if i == 0:
+    #         phi_ts = torch.tensor(
+    #             t[0], device=device, dtype=torch.float32)
+    #         phi_tplus1s = torch.tensor(
+    #             t[3], device=device, dtype=torch.float32)
+    #     else:
+    #         phi_ts = torch.stack((phi_ts, torch.as_tensor(
+    #             t[0], device=device, dtype=torch.float32)))
+    #         phi_tplus1s = torch.stack((phi_tplus1s, torch.as_tensor(
+    #             t[3], device=device, dtype=torch.float32)))
+
+    # print(f"phi_ts.shape: {phi_ts.shape}")
+    # print(f"phi_tplus1s.shape: {phi_tplus1s.shape}")
+
+    # phi_ts = torch.stack(
+    #     [torch.as_tensor(t[0], device=device, dtype=torch.float32) for t in minibatch])
+    # phi_tplus1s = torch.stack(
+    #     [torch.as_tensor(t[3], device=device, dtype=torch.float32) for t in minibatch])
+
+    phi_js = [t[0] for t in minibatch]
     a_ts = np.asarray([t[1] for t in minibatch])
     r_ts = np.asarray([t[2] for t in minibatch])
-    phi_tplus1s = torch.stack(
-        [torch.as_tensor(t[3], device=device, dtype=torch.float32) for t in minibatch])
+    phi_jplus1s = [t[3] for t in minibatch]
     dones = np.asarray([t[4] for t in minibatch])
 
-    phi_ts = torch.as_tensor(phi_ts, dtype=torch.float32, device=device)
+    # for the frames:
+    phi_js = np.stack([phi_j for phi_j in phi_js])
+    phi_jplus1s = np.stack([phi_jplus1 for phi_jplus1 in phi_jplus1s])
+    # phi_js = np.stack([np.concatenate(phi_j, axis=0) for phi_j in phi_js])
+    # phi_jplus1s = np.stack([np.concatenate(phi_jplus1, axis=0)
+    #                        for phi_jplus1 in phi_jplus1s])
+
+    # phi_ts = torch.stack(
+    #     [torch.as_tensor(t[0], device=device, dtype=torch.float32) for t in minibatch])
+    # a_ts = np.asarray([t[1] for t in minibatch])
+    # r_ts = np.asarray([t[2] for t in minibatch])
+    # phi_tplus1s = torch.stack(
+    #     [torch.as_tensor(t[3], device=device, dtype=torch.float32) for t in minibatch])
+    # dones = np.asarray([t[4] for t in minibatch])
+
+    # print(f"phi_js.shape: {phi_js.shape}")
+
+    phi_js = torch.as_tensor(phi_js, dtype=torch.float32, device=device)
     a_ts = torch.as_tensor(a_ts, dtype=torch.int64,
                            device=device).unsqueeze(-1)
     r_ts = torch.as_tensor(r_ts, dtype=torch.float32,
                            device=device).unsqueeze(-1)
-    phi_tplus1s = torch.as_tensor(
-        phi_tplus1s, dtype=torch.float32, device=device)
+    phi_jplus1s = torch.as_tensor(
+        phi_jplus1s, dtype=torch.float32, device=device)
     dones = torch.as_tensor(dones, dtype=torch.float32,
                             device=device).unsqueeze(-1)
+    #! this worked vvv
+    # phi_ts = torch.as_tensor(phi_ts, dtype=torch.float32, device=device)
+    # a_ts = torch.as_tensor(a_ts, dtype=torch.int64,
+    #                        device=device).unsqueeze(-1)
+    # r_ts = torch.as_tensor(r_ts, dtype=torch.float32,
+    #                        device=device).unsqueeze(-1)
+    # phi_tplus1s = torch.as_tensor(
+    #     phi_tplus1s, dtype=torch.float32, device=device)
+    # dones = torch.as_tensor(dones, dtype=torch.float32,
+    #                         device=device).unsqueeze(-1)
 
     # compute targets
-    target_q_values = target_net(phi_tplus1s)
+    target_q_values = target_net(phi_jplus1s)
     max_target_q_values = target_q_values.max(dim=1, keepdim=True)[0]
 
     # clever piecewise function (becasue if dones_t is 1 then targets just = rews_t)
@@ -294,52 +368,171 @@ def calc_loss(minibatch, target_net, policy_net, device):
     targets = r_ts + GAMMA * (1 - dones) * max_target_q_values
 
     # Calc loss
-    q_values = policy_net(phi_tplus1s)
+    q_values = policy_net(phi_js)
     action_q_values = torch.gather(input=q_values, dim=1, index=a_ts)
     loss = torch.nn.functional.smooth_l1_loss(action_q_values, targets)
 
     return loss
 
-    y_j = []  # targets (uses Q_hat)
 
-    policy_q = []  # policy network (uses Q)
+# def calc_loss(minibatch, target_net, policy_net, device):
+#     """ calculates loss: (y_j - Q(phi_j, a_j; theta))^2
 
-    a_j = []
+#         calculating targets y_j:
+#         y_j = r_j if episode terminates at step j+1
+#         otherwise
+#         y_j = r_j + gamma * "max_target_q_values"
 
-    for transition in minibatch:
-        r_j = transition[2]
+#         minibatch = batch of transitions (phi_t, a_t, r_t, phi_tplus1, done)
 
-        if transition[4] == True:
-            # done == true
-            y_j.append(r_j)
+#     """
 
-        else:
-            # phi_jplus1 = transition[3]
-            phi_jplus1_tensor = transition[3]
-            # # first "stack" np array
-            # phi_jplus1 = np.stack(np.concatenate(phi_jplus1, axis=0))
-            # phi_jplus1_tensor = torch.tensor(phi_jplus1, device=device)
-            target_q_values = target_net(phi_jplus1_tensor)
-            max_target_q = target_q_values.max(dim=1, keepdim=True)[0]
-            y_j_val = r_j + GAMMA * max_target_q
-            y_j.append(y_j_val)
+#     #! could probably do this as "tensor operations" rather and a for loop...
 
-        # phi_j = transition[0]
-        phi_j_tensor = transition[0]
-        # phi_j_tensor = torch.tensor(phi_j, device=device)
-        policy_q.append(policy_net(phi_j_tensor))
+#     # phi_ts = [t[0] for t in minibatch]
+#     # a_ts = np.asarray([t[1] for t in minibatch])
+#     # r_ts = np.asarray([t[2] for t in minibatch])
+#     # phi_tplus1s = [t[3] for t in minibatch]
+#     # dones = np.asarray([t[4] for t in minibatch])
 
-        a_j.append(transition[1])
+#     # phi_ts = torch.tensor(device=device, dtype=torch.float32)
 
-    # convert to tensors
-    y_j_tensor = torch.as_tensor(y_j, device=device)
-    policy_q_tensor = torch.as_tensor(policy_q, device=device)
+#     print(f"type(minibatch[0][0]): {type(minibatch[0][0])}")
+#     # print(f"type(minibatch[0][3]): {type(minibatch[0][3])}")
 
-    # now calc loss
-    action_q_values = torch.gather(input=policy_q_tensor, dim=1, index=a_j)
-    loss = torch.nn.functional.smooth_l1_loss(action_q_values, y_j_tensor)
+#     # print(isinstance(obses[0], PytorchLazyFrames))
 
-    return loss
+#     # np.concatenate(t[0], axis=0)
+#     # phi_ts_np = np.stack([np.concatenate(t[0], axis=0) for t in minibatch])
+#     phi_ts_np = np.stack(np.concatenate(t[0], axis=0) for t in minibatch)
+#     # phi_tplus1s_np = np.stack([np.concatenate(t[3], axis=0)
+#     #                           for t in minibatch])
+#     phi_tplus1s_np = np.stack(np.concatenate(t[3], axis=0) for t in minibatch)
+
+#     print(f"phi_t_np.shape: {phi_ts_np.shape}")
+
+#     # phi_ts = torch.as_tensor(phi_ts_np, device=device, dtype=torch.float32)
+#     # # phi_ts = torch.stack(phi_t_lst)
+
+#     # phi_tplus1_lst = [torch.as_tensor(
+#     #     t[3], device=device, dtype=torch.float32) for t in minibatch]
+#     # phi_tplus1s = torch.stack(phi_tplus1_lst)
+
+#     # phi_t_lst = [torch.as_tensor(
+#     #     t[0], device=device, dtype=torch.float32) for t in minibatch]
+#     # phi_ts = torch.stack(phi_t_lst)
+
+#     # phi_tplus1_lst = [torch.as_tensor(
+#     #     t[3], device=device, dtype=torch.float32) for t in minibatch]
+#     # phi_tplus1s = torch.stack(phi_tplus1_lst)
+
+#     # for i, t in enumerate(minibatch):
+#     #     if i == 0:
+#     #         phi_ts = torch.tensor(
+#     #             t[0], device=device, dtype=torch.float32)
+#     #         phi_tplus1s = torch.tensor(
+#     #             t[3], device=device, dtype=torch.float32)
+#     #     else:
+#     #         phi_ts = torch.stack((phi_ts, torch.as_tensor(
+#     #             t[0], device=device, dtype=torch.float32)))
+#     #         phi_tplus1s = torch.stack((phi_tplus1s, torch.as_tensor(
+#     #             t[3], device=device, dtype=torch.float32)))
+
+#     # print(f"phi_ts.shape: {phi_ts.shape}")
+#     # print(f"phi_tplus1s.shape: {phi_tplus1s.shape}")
+
+#     # phi_ts = torch.stack(
+#     #     [torch.as_tensor(t[0], device=device, dtype=torch.float32) for t in minibatch])
+#     # phi_tplus1s = torch.stack(
+#     #     [torch.as_tensor(t[3], device=device, dtype=torch.float32) for t in minibatch])
+
+#     a_ts = np.asarray([t[1] for t in minibatch])
+#     r_ts = np.asarray([t[2] for t in minibatch])
+#     dones = np.asarray([t[4] for t in minibatch])
+
+#     # phi_ts = torch.stack(
+#     #     [torch.as_tensor(t[0], device=device, dtype=torch.float32) for t in minibatch])
+#     # a_ts = np.asarray([t[1] for t in minibatch])
+#     # r_ts = np.asarray([t[2] for t in minibatch])
+#     # phi_tplus1s = torch.stack(
+#     #     [torch.as_tensor(t[3], device=device, dtype=torch.float32) for t in minibatch])
+#     # dones = np.asarray([t[4] for t in minibatch])
+
+#     phi_ts = torch.as_tensor(phi_ts_np, dtype=torch.float32, device=device)
+#     a_ts = torch.as_tensor(a_ts, dtype=torch.int64,
+#                            device=device).unsqueeze(-1)
+#     r_ts = torch.as_tensor(r_ts, dtype=torch.float32,
+#                            device=device).unsqueeze(-1)
+#     phi_tplus1s = torch.as_tensor(
+#         phi_tplus1s_np, dtype=torch.float32, device=device)
+#     dones = torch.as_tensor(dones, dtype=torch.float32,
+#                             device=device).unsqueeze(-1)
+#     #! this worked vvv
+#     # phi_ts = torch.as_tensor(phi_ts, dtype=torch.float32, device=device)
+#     # a_ts = torch.as_tensor(a_ts, dtype=torch.int64,
+#     #                        device=device).unsqueeze(-1)
+#     # r_ts = torch.as_tensor(r_ts, dtype=torch.float32,
+#     #                        device=device).unsqueeze(-1)
+#     # phi_tplus1s = torch.as_tensor(
+#     #     phi_tplus1s, dtype=torch.float32, device=device)
+#     # dones = torch.as_tensor(dones, dtype=torch.float32,
+#     #                         device=device).unsqueeze(-1)
+
+#     # compute targets
+#     target_q_values = target_net(phi_tplus1s)
+#     max_target_q_values = target_q_values.max(dim=1, keepdim=True)[0]
+
+#     # clever piecewise function (becasue if dones_t is 1 then targets just = rews_t)
+#     # maybe slow though because we calc max_target_q_values every time...
+#     targets = r_ts + GAMMA * (1 - dones) * max_target_q_values
+
+#     # Calc loss
+#     q_values = policy_net(phi_tplus1s)
+#     action_q_values = torch.gather(input=q_values, dim=1, index=a_ts)
+#     loss = torch.nn.functional.smooth_l1_loss(action_q_values, targets)
+
+#     return loss
+
+#     y_j = []  # targets (uses Q_hat)
+
+#     policy_q = []  # policy network (uses Q)
+
+#     a_j = []
+
+#     for transition in minibatch:
+#         r_j = transition[2]
+
+#         if transition[4] == True:
+#             # done == true
+#             y_j.append(r_j)
+
+#         else:
+#             # phi_jplus1 = transition[3]
+#             phi_jplus1_tensor = transition[3]
+#             # # first "stack" np array
+#             # phi_jplus1 = np.stack(np.concatenate(phi_jplus1, axis=0))
+#             # phi_jplus1_tensor = torch.tensor(phi_jplus1, device=device)
+#             target_q_values = target_net(phi_jplus1_tensor)
+#             max_target_q = target_q_values.max(dim=1, keepdim=True)[0]
+#             y_j_val = r_j + GAMMA * max_target_q
+#             y_j.append(y_j_val)
+
+#         # phi_j = transition[0]
+#         phi_j_tensor = transition[0]
+#         # phi_j_tensor = torch.tensor(phi_j, device=device)
+#         policy_q.append(policy_net(phi_j_tensor))
+
+#         a_j.append(transition[1])
+
+#     # convert to tensors
+#     y_j_tensor = torch.as_tensor(y_j, device=device)
+#     policy_q_tensor = torch.as_tensor(policy_q, device=device)
+
+#     # now calc loss
+#     action_q_values = torch.gather(input=policy_q_tensor, dim=1, index=a_j)
+#     loss = torch.nn.functional.smooth_l1_loss(action_q_values, y_j_tensor)
+
+#     return loss
 
 
 # def calc_loss(minibatch, target_net, policy_net, device):
@@ -396,7 +589,6 @@ def calc_loss(minibatch, target_net, policy_net, device):
 #     loss = torch.nn.functional.smooth_l1_loss(action_q_values, y_j_tensor)
 
 #     return loss
-
 if __name__ == "__main__":
     # print("Agent")
     # init_game()
