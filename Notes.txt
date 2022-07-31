@@ -8,3 +8,10 @@ https://pytorch.org/get-started/locally/
 
 Maybe useful... not exactly correct through
 https://github.com/tjwhitaker/human-level-control-through-deep-reinforcement-learning
+
+Resize and stacking of env frames:
+https://stackoverflow.com/questions/67674324/resize-a-state-of-a-gym-environment-composed-by-4-frames-atari-environment
+
+
+Deepmind code:
+https://github.com/deepmind/dqn
