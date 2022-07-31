@@ -4,7 +4,7 @@ from collections import deque
 import random
 import time
 import torch
-from dqn import Network
+from dqn import Network, init_weights
 # from game import Preprocessing
 from game import Game, Preprocessing, game_test
 import numpy as np
@@ -26,7 +26,9 @@ INITIAL_EXPLORATION = 1  # Initial value of epsilon in epsilon-greedy exploratio
 FINAL_EXPLORATION = 0.1  # final value of epsilon in epsilon-greedy exploration
 FINAL_EXPLORATION_FRAME = int(1e6)  # num frames epsilon changes linearly
 
-REPLAY_START_SIZE = int(5e4)  # uniform random policy run before learning
+# REPLAY_START_SIZE = int(5e4)  # uniform random policy run before learning
+REPLAY_START_SIZE = 33  # uniform random policy run before learning
+
 
 PRINT_INFO_FREQ = int(1e3)
 
@@ -80,6 +82,8 @@ def main():
     # initialise policy_net
     policy_net = Network(num_actions, env_obs_space).to(device)
 
+    # policy_net.apply(init_weights)
+
     # * Initialize target action-value function Q_hat with weights Theta_bar = Theta
     # initialise target_net
     target_net = Network(num_actions, env_obs_space).to(device)
@@ -98,20 +102,29 @@ def main():
         # * Initialize sequence s_1 = {x_1} and preprocessed sequence phi_1 = phi(s_1)
         # phi_t=1, preprocessed sequence
         phi_t, _ = env.reset(return_info=True)
+        # first "stack" np array
+        # phi_t = np.stack(np.concatenate(phi_t, axis=0))
+        phi_t = torch.as_tensor(phi_t, device=device, dtype=torch.float32)
 
         # * For t = 1, T do
         for t in count():
             step += 1
 
-            if step % PRINT_INFO_FREQ == 0:
-                print(f"step: {step}, t: {t}, episode: {episode}")
+            # if step % PRINT_INFO_FREQ == 0:
+            #     print(f"step: {step}, t: {t}, episode: {episode}")
+
+            # print(f"type(phi_t): {type(phi_t)}")
 
             # * With probability epsilon select a random action a_t
             # * otherwise select a_t = argmax_a Q(phi(s_t),a;Theta)
-            a_t = select_action(num_actions, step, phi_t, policy_net)
+            a_t = select_action(num_actions, step, phi_t, policy_net, device)
 
             # * Execute action a_t in emulator and observe reward r_t and image x_t+1
             phi_tplus1, r_t, term, trun, info = env.step(a_t)  # x_tplus1
+            # first "stack" np array
+            # phi_tplus1 = np.stack(np.concatenate(phi_tplus1, axis=0))
+            phi_tplus1 = torch.as_tensor(
+                phi_tplus1, device=device, dtype=torch.float32)
             done_tplus1 = term or trun  # done flag (terminated or truncated)
 
             # * Set s_t+1 = s_t,a_t,x_t+1 and preprocess phi_t+1 = phi(s_t+1)
@@ -136,7 +149,7 @@ def main():
                 # * Perform a gradient descent step on (y_j - Q(phi_j, a_j; Theta))^2 with respect to the network parameters Theta
 
                 # calculate loss [ (y_j - Q(phi_j, a_j; Theta))^2 ]
-                loss = calc_loss(minibatch, target_net, policy_net)
+                loss = calc_loss(minibatch, target_net, policy_net, device)
 
                 # Gradient Descent
                 optimiser.zero_grad()
@@ -158,7 +171,7 @@ def main():
     # * End For
 
 
-def select_action(num_actions, step, phi_t, policy_net):
+def select_action(num_actions, step, phi_t_tensor, policy_net, device):
     """ selects action, either random or from model """
 
     # epsilon = np.interp(self.step * NUM_ENVS, [0, EPSILON_DECAY], [EPSILON_START, EPSILON_END])
@@ -188,8 +201,8 @@ def select_action(num_actions, step, phi_t, policy_net):
 
     rand_sample = random.random()
 
-    if step >= REPLAY_START_SIZE:
-        print(f"epsilon: {epsilon}, rand_sample: {rand_sample}")
+    # if step >= REPLAY_START_SIZE:
+    #     print(f"epsilon: {epsilon}, rand_sample: {rand_sample}")
 
     if rand_sample < epsilon:
         action = random.randrange(num_actions)
@@ -197,7 +210,9 @@ def select_action(num_actions, step, phi_t, policy_net):
         # print(f"random action: {action}")
     else:
         with torch.no_grad():
-            policy_q = policy_net(phi_t)
+            # convert phi_t to tensor
+            # phi_t_tensor = torch.tensor(phi_t, device=device)
+            policy_q = policy_net(phi_t_tensor)
             # max_q_indices = torch.argmax(policy_q, dim=1)
             max_q_index = torch.argmax(policy_q, dim=1)
             # actions = max_q_indices.detach().tolist()
@@ -208,7 +223,7 @@ def select_action(num_actions, step, phi_t, policy_net):
     return action
 
 
-def calc_loss(minibatch, target_net, policy_net):
+def calc_loss(minibatch, target_net, policy_net, device):
     """ calculates loss: (y_j - Q(phi_j, a_j; theta))^2
 
         calculating targets y_j:
@@ -221,6 +236,39 @@ def calc_loss(minibatch, target_net, policy_net):
     """
 
     #! could probably do this as "tensor operations" rather and a for loop...
+
+    # phi_ts = [t[0] for t in minibatch]
+    # a_ts = np.asarray([t[1] for t in minibatch])
+    # r_ts = np.asarray([t[2] for t in minibatch])
+    # phi_tplus1s = [t[3] for t in minibatch]
+    # dones = np.asarray([t[4] for t in minibatch])
+
+    phi_ts = torch.stack([t[0] for t in minibatch])
+    a_ts = np.asarray([t[1] for t in minibatch])
+    r_ts = np.asarray([t[2] for t in minibatch])
+    phi_tplus1s = torch.stack([t[3] for t in minibatch])
+    dones = np.asarray([t[4] for t in minibatch])
+
+    phi_ts = torch.as_tensor(phi_ts, dtype=torch.float32, device=device)
+    a_ts = torch.as_tensor(a_ts, dtype=torch.int64, device=device).unsqueeze(-1)
+    r_ts = torch.as_tensor(r_ts, dtype=torch.float32, device=device).unsqueeze(-1)
+    phi_tplus1s = torch.as_tensor(phi_tplus1s, dtype=torch.float32, device=device)
+    dones = torch.as_tensor(dones, dtype=torch.float32, device=device).unsqueeze(-1)
+
+    # compute targets
+    target_q_values = target_net(phi_tplus1s)
+    max_target_q_values = target_q_values.max(dim=1, keepdim=True)[0]
+
+    # clever piecewise function (becasue if dones_t is 1 then targets just = rews_t)
+    # maybe slow though because we calc max_target_q_values every time...
+    targets = r_ts + GAMMA * (1 - dones) * max_target_q_values 
+
+    # Calc loss
+    q_values = policy_net(phi_tplus1s)
+    action_q_values = torch.gather(input=q_values, dim=1, index=a_ts)
+    loss = torch.nn.functional.smooth_l1_loss(action_q_values, targets)
+
+    return loss
 
     y_j = []  # targets (uses Q_hat)
 
@@ -236,23 +284,88 @@ def calc_loss(minibatch, target_net, policy_net):
             y_j.append(r_j)
 
         else:
-            phi_jplus1 = transition[3]
-            target_q_values = target_net(phi_jplus1)
+            # phi_jplus1 = transition[3]
+            phi_jplus1_tensor = transition[3]
+            # # first "stack" np array
+            # phi_jplus1 = np.stack(np.concatenate(phi_jplus1, axis=0))
+            # phi_jplus1_tensor = torch.tensor(phi_jplus1, device=device)
+            target_q_values = target_net(phi_jplus1_tensor)
             max_target_q = target_q_values.max(dim=1, keepdim=True)[0]
             y_j_val = r_j + GAMMA * max_target_q
             y_j.append(y_j_val)
 
-        phi_j = transition[0]
-        policy_q.append(policy_net(phi_j))
+        # phi_j = transition[0]
+        phi_j_tensor = transition[0]
+        # phi_j_tensor = torch.tensor(phi_j, device=device)
+        policy_q.append(policy_net(phi_j_tensor))
 
         a_j.append(transition[1])
 
+    # convert to tensors
+    y_j_tensor = torch.as_tensor(y_j, device=device)
+    policy_q_tensor = torch.as_tensor(policy_q, device=device)
+
     # now calc loss
-    action_q_values = torch.gather(input=policy_q, dim=1, index=a_j)
-    loss = torch.nn.functional.smooth_l1_loss(action_q_values, y_j)
+    action_q_values = torch.gather(input=policy_q_tensor, dim=1, index=a_j)
+    loss = torch.nn.functional.smooth_l1_loss(action_q_values, y_j_tensor)
 
     return loss
 
+
+# def calc_loss(minibatch, target_net, policy_net, device):
+#     """ calculates loss: (y_j - Q(phi_j, a_j; theta))^2
+
+#         calculating targets y_j:
+#         y_j = r_j if episode terminates at step j+1
+#         otherwise
+#         y_j = r_j + gamma * "max_target_q_values"
+
+#         minibatch = batch of transitions (phi_t, a_t, r_t, phi_tplus1, done)
+
+#     """
+
+#     #! could probably do this as "tensor operations" rather and a for loop...
+
+#     y_j = []  # targets (uses Q_hat)
+
+#     policy_q = []  # policy network (uses Q)
+
+#     a_j = []
+
+#     for transition in minibatch:
+#         r_j = transition[2]
+
+#         if transition[4] == True:
+#             # done == true
+#             y_j.append(r_j)
+
+#         else:
+#             # phi_jplus1 = transition[3]
+#             phi_jplus1_tensor = transition[3]
+#             # # first "stack" np array
+#             # phi_jplus1 = np.stack(np.concatenate(phi_jplus1, axis=0))
+#             # phi_jplus1_tensor = torch.tensor(phi_jplus1, device=device)
+#             target_q_values = target_net(phi_jplus1_tensor)
+#             max_target_q = target_q_values.max(dim=1, keepdim=True)[0]
+#             y_j_val = r_j + GAMMA * max_target_q
+#             y_j.append(y_j_val)
+
+#         # phi_j = transition[0]
+#         phi_j_tensor = transition[0]
+#         # phi_j_tensor = torch.tensor(phi_j, device=device)
+#         policy_q.append(policy_net(phi_j_tensor))
+
+#         a_j.append(transition[1])
+
+#     # convert to tensors
+#     y_j_tensor = torch.as_tensor(y_j, device=device)
+#     policy_q_tensor = torch.as_tensor(policy_q, device=device)
+
+#     # now calc loss
+#     action_q_values = torch.gather(input=policy_q_tensor, dim=1, index=a_j)
+#     loss = torch.nn.functional.smooth_l1_loss(action_q_values, y_j_tensor)
+
+#     return loss
 
 if __name__ == "__main__":
     # print("Agent")

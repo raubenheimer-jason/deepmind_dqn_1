@@ -4,6 +4,11 @@ import torch
 import torch.nn as nn
 
 
+def init_weights(m):
+    if isinstance(m, nn.Linear) or isinstance(m, nn.Conv2d):
+        torch.nn.init.kaiming_uniform_(m.weight, nonlinearity='relu')
+
+
 def nature_cnn(observation_space, depths=(32, 64, 64), final_layer=512):
     """
     CHW format (channels, height, width)
@@ -28,12 +33,15 @@ def nature_cnn(observation_space, depths=(32, 64, 64), final_layer=512):
         nn.ReLU(),
         nn.Conv2d(depths[1], depths[2], kernel_size=3, stride=1),
         nn.ReLU(),
+        nn.Flatten()
     )
 
     # compute shape by doing one forward pass
     with torch.no_grad():
         n_flatten = cnn(torch.as_tensor(
             observation_space.sample()[None]).float()).shape[1]
+
+    print(f"n_flatten: {n_flatten}")
 
     out = nn.Sequential(cnn, nn.Linear(n_flatten, final_layer), nn.ReLU())
 
@@ -53,16 +61,22 @@ class Network(nn.Module):
         Input:      84 x 84 x 4 image produced by the preprocessing map phi
         Output:     Single output for each valid action
         """
-        super(Network, self).__init__()
+        # super(Network, self).__init__()
+        super().__init__()
 
         self.num_actions = num_actions
         self.env_obs_space = env_obs_space
 
         conv_net = nature_cnn(env_obs_space)
 
+        # print(f"self.num_actions: {self.num_actions}")
+
         self.net = nn.Sequential(conv_net, nn.Linear(512, self.num_actions))
 
     def forward(self, x):
+        # print(x)
+        # print(type(x))
+        print(f"x.shape: {x.shape}")
         return self.net(x)
 
     # def select_action(self, step, phi_t):
