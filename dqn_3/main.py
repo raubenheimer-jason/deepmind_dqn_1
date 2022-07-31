@@ -15,6 +15,10 @@ from agent import Agent
 
 import matplotlib.pyplot as plt
 
+from torch.utils.tensorboard import SummaryWriter
+
+from datetime import datetime
+
 
 REPLAY_MEM_SIZE = int(1e6)
 BATCH_SIZE = 32
@@ -45,11 +49,19 @@ DECAY_C = INITIAL_EXPLORATION - (DECAY_SLOPE*REPLAY_START_SIZE)
 #     (0.0-FINAL_EXPLORATION_FRAME)
 
 
+LOG_DIR = "./logs/"
+LOG_INTERVAL = 1000
+
+
 def main():
     # start = time.time()
     # game_test()
 
     # print(time.time()-start)
+
+    now = datetime.now()  # current date and time
+    log_path = LOG_DIR + now.strftime("%Y-%m-%d__%H-%M-%S")
+    summary_writer = SummaryWriter(log_path)
 
     # if gpu is to be used
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -100,6 +112,11 @@ def main():
     step = 0
 
     episode_rewards = []
+    episode_lengths = []
+
+    # epinfos_buffer = deque([], maxlen=100)
+    rewards_buffer = deque([], maxlen=100)
+    lengths_buffer = deque([], maxlen=100)
 
     # * For episode = 1, M do
     for episode in count():
@@ -107,6 +124,7 @@ def main():
         # for episode in range(100):
 
         episode_rewards.append(0.0)
+        episode_lengths.append(0)
 
         # * Initialize sequence s_1 = {x_1} and preprocessed sequence phi_1 = phi(s_1)
         # phi_t=1, preprocessed sequence
@@ -137,6 +155,7 @@ def main():
             done_tplus1 = term or trun  # done flag (terminated or truncated)
 
             episode_rewards[episode] += r_t
+            episode_lengths[episode] += 1
 
             # * Set s_t+1 = s_t,a_t,x_t+1 and preprocess phi_t+1 = phi(s_t+1)
             # s_tplus1 = [s_t, a_t, x_tplus1]
@@ -172,14 +191,38 @@ def main():
                 if step % TARGET_NET_UPDATE_FREQ == 0:
                     target_net.load_state_dict(policy_net.state_dict())
 
+            # Logging
+            if step % LOG_INTERVAL == 0:
+                # rew_mean = np.mean([e['r'] for e in epinfos_buffer]) or 0
+                # len_mean = np.mean([e['l'] for e in epinfos_buffer]) or 0
+                rew_mean = np.mean(rewards_buffer) or 0
+                len_mean = np.mean(lengths_buffer) or 0
+
+                print()
+                print('Step', step)
+                print('Avg Rew (mean last 100 episodes)', rew_mean)
+                print('Avg Ep steps (mean last 100 episodes)', len_mean)
+                print('Episodes', episode)
+
+                summary_writer.add_scalar('AvgRew', rew_mean, global_step=step)
+                summary_writer.add_scalar(
+                    'AvgEpLen', len_mean, global_step=step)
+                summary_writer.add_scalar(
+                    'Episodes', episode, global_step=step)
+
             # if episode is over (no lives left etc), then reset and start new episode
             if done_tplus1:
+                # print(info)
+                # epinfos_buffer.append(info['episode'])
+                rewards_buffer.append(episode_rewards[episode])
+                lengths_buffer.append(episode_lengths[episode])
+
                 break
 
             phi_t = phi_tplus1
 
-        print(
-            f"step: {step}, episode_reward[episode={episode}]: {episode_rewards[episode]}")
+        # print(
+        #     f"step: {step}, episode_reward[episode={episode}]: {episode_rewards[episode]}")
         # plt.clf()
         # plt.plot(episode_rewards)  # plotting by columns
         # plt.pause(0.0001)
@@ -229,8 +272,9 @@ def select_action(num_actions, step, phi_t, policy_net, device):
         # print(f"random action: {action}")
     else:
         with torch.no_grad():
-            print("select action ------------------------------")
+            # print("select action ------------------------------")
             # convert phi_t to tensor
+            phi_t = np.asarray(phi_t)
             phi_t_tensor = torch.as_tensor(
                 phi_t, device=device, dtype=torch.float32)
             phi_t_tensor = torch.stack([phi_t_tensor])
@@ -242,7 +286,7 @@ def select_action(num_actions, step, phi_t, policy_net, device):
             # return self.policy_net(state).max(1)[1].view(1, 1)
             # print(f"policy_q action: {action}")
 
-            print(f"action: {action}")
+            # print(f"action: {action}")
 
     return action
 
@@ -316,15 +360,19 @@ def calc_loss(minibatch, target_net, policy_net, device):
     # phi_tplus1s = torch.stack(
     #     [torch.as_tensor(t[3], device=device, dtype=torch.float32) for t in minibatch])
 
-    phi_js = [t[0] for t in minibatch]
+    phi_js = np.asarray([t[0] for t in minibatch])
     a_ts = np.asarray([t[1] for t in minibatch])
     r_ts = np.asarray([t[2] for t in minibatch])
-    phi_jplus1s = [t[3] for t in minibatch]
+    phi_jplus1s = np.asarray([t[3] for t in minibatch])
     dones = np.asarray([t[4] for t in minibatch])
 
+    # print(f"phi_js.shape: {phi_js.shape}")
+
     # for the frames:
-    phi_js = np.stack([phi_j for phi_j in phi_js])
-    phi_jplus1s = np.stack([phi_jplus1 for phi_jplus1 in phi_jplus1s])
+    # phi_js = np.stack([phi_j for phi_j in phi_js])
+    # phi_jplus1s = np.stack([phi_jplus1 for phi_jplus1 in phi_jplus1s])
+    # phi_js = np.stack([phi_j for phi_j in phi_js])
+    # phi_jplus1s = np.stack([phi_jplus1 for phi_jplus1 in phi_jplus1s])
     # phi_js = np.stack([np.concatenate(phi_j, axis=0) for phi_j in phi_js])
     # phi_jplus1s = np.stack([np.concatenate(phi_jplus1, axis=0)
     #                        for phi_jplus1 in phi_jplus1s])
