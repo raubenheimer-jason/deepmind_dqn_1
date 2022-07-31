@@ -29,8 +29,8 @@ INITIAL_EXPLORATION = 1  # Initial value of epsilon in epsilon-greedy exploratio
 FINAL_EXPLORATION = 0.1  # final value of epsilon in epsilon-greedy exploration
 FINAL_EXPLORATION_FRAME = int(1e6)  # num frames epsilon changes linearly
 
-# REPLAY_START_SIZE = int(5e4)  # uniform random policy run before learning
-REPLAY_START_SIZE = 33  # uniform random policy run before learning
+REPLAY_START_SIZE = int(5e4)  # uniform random policy run before learning
+# REPLAY_START_SIZE = 33  # uniform random policy run before learning
 
 
 PRINT_INFO_FREQ = int(1e3)
@@ -102,9 +102,9 @@ def main():
     episode_rewards = []
 
     # * For episode = 1, M do
-    # for episode in count():
+    for episode in count():
 
-    for episode in range(100):
+        # for episode in range(100):
 
         episode_rewards.append(0.0)
 
@@ -178,10 +178,11 @@ def main():
 
             phi_t = phi_tplus1
 
-        print(f"episode_reward[episode={episode}]: {episode_rewards[episode]}")
+        print(
+            f"step: {step}, episode_reward[episode={episode}]: {episode_rewards[episode]}")
         plt.clf()
         plt.plot(episode_rewards)  # plotting by columns
-        plt.pause(0.1)
+        plt.pause(0.0001)
 
     plt.show()
 
