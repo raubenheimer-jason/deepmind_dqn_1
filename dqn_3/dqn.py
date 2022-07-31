@@ -41,7 +41,7 @@ def nature_cnn(observation_space, depths=(32, 64, 64), final_layer=512):
         n_flatten = cnn(torch.as_tensor(
             observation_space.sample()[None]).float()).shape[1]
 
-    print(f"n_flatten: {n_flatten}")
+    # print(f"n_flatten: {n_flatten}")
 
     out = nn.Sequential(cnn, nn.Linear(n_flatten, final_layer), nn.ReLU())
 
@@ -76,7 +76,7 @@ class Network(nn.Module):
     def forward(self, x):
         # print(x)
         # print(type(x))
-        print(f"x.shape: {x.shape}")
+        # print(f"x.shape: {x.shape}")
         return self.net(x)
 
     # def select_action(self, step, phi_t):

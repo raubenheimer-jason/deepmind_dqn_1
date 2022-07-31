@@ -13,6 +13,9 @@ from itertools import count
 
 from agent import Agent
 
+import matplotlib.pyplot as plt
+
+
 REPLAY_MEM_SIZE = int(1e6)
 BATCH_SIZE = 32
 GAMMA = 0.99  # discount factor used in Q-learning update
@@ -96,8 +99,14 @@ def main():
 
     step = 0
 
+    episode_rewards = []
+
     # * For episode = 1, M do
-    for episode in count():
+    # for episode in count():
+
+    for episode in range(100):
+
+        episode_rewards.append(0.0)
 
         # * Initialize sequence s_1 = {x_1} and preprocessed sequence phi_1 = phi(s_1)
         # phi_t=1, preprocessed sequence
@@ -126,6 +135,8 @@ def main():
             phi_tplus1 = torch.as_tensor(
                 phi_tplus1, device=device, dtype=torch.float32)
             done_tplus1 = term or trun  # done flag (terminated or truncated)
+
+            episode_rewards[episode] += r_t
 
             # * Set s_t+1 = s_t,a_t,x_t+1 and preprocess phi_t+1 = phi(s_t+1)
             # s_tplus1 = [s_t, a_t, x_tplus1]
@@ -166,6 +177,13 @@ def main():
                 break
 
             phi_t = phi_tplus1
+
+        print(f"episode_reward[episode={episode}]: {episode_rewards[episode]}")
+        plt.clf()
+        plt.plot(episode_rewards)  # plotting by columns
+        plt.pause(0.1)
+
+    plt.show()
 
     # * End For
     # * End For
@@ -210,15 +228,19 @@ def select_action(num_actions, step, phi_t_tensor, policy_net, device):
         # print(f"random action: {action}")
     else:
         with torch.no_grad():
+            print("select action ------------------------------")
             # convert phi_t to tensor
             # phi_t_tensor = torch.tensor(phi_t, device=device)
+            phi_t_tensor = torch.stack([phi_t_tensor])
             policy_q = policy_net(phi_t_tensor)
             # max_q_indices = torch.argmax(policy_q, dim=1)
             max_q_index = torch.argmax(policy_q, dim=1)
             # actions = max_q_indices.detach().tolist()
-            action = max_q_index.detach().tolist()
+            action = max_q_index.detach().item()
             # return self.policy_net(state).max(1)[1].view(1, 1)
             # print(f"policy_q action: {action}")
+
+            print(f"action: {action}")
 
     return action
 
@@ -250,10 +272,14 @@ def calc_loss(minibatch, target_net, policy_net, device):
     dones = np.asarray([t[4] for t in minibatch])
 
     phi_ts = torch.as_tensor(phi_ts, dtype=torch.float32, device=device)
-    a_ts = torch.as_tensor(a_ts, dtype=torch.int64, device=device).unsqueeze(-1)
-    r_ts = torch.as_tensor(r_ts, dtype=torch.float32, device=device).unsqueeze(-1)
-    phi_tplus1s = torch.as_tensor(phi_tplus1s, dtype=torch.float32, device=device)
-    dones = torch.as_tensor(dones, dtype=torch.float32, device=device).unsqueeze(-1)
+    a_ts = torch.as_tensor(a_ts, dtype=torch.int64,
+                           device=device).unsqueeze(-1)
+    r_ts = torch.as_tensor(r_ts, dtype=torch.float32,
+                           device=device).unsqueeze(-1)
+    phi_tplus1s = torch.as_tensor(
+        phi_tplus1s, dtype=torch.float32, device=device)
+    dones = torch.as_tensor(dones, dtype=torch.float32,
+                            device=device).unsqueeze(-1)
 
     # compute targets
     target_q_values = target_net(phi_tplus1s)
@@ -261,7 +287,7 @@ def calc_loss(minibatch, target_net, policy_net, device):
 
     # clever piecewise function (becasue if dones_t is 1 then targets just = rews_t)
     # maybe slow though because we calc max_target_q_values every time...
-    targets = r_ts + GAMMA * (1 - dones) * max_target_q_values 
+    targets = r_ts + GAMMA * (1 - dones) * max_target_q_values
 
     # Calc loss
     q_values = policy_net(phi_tplus1s)
