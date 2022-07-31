@@ -113,7 +113,7 @@ def main():
         phi_t, _ = env.reset(return_info=True)
         # first "stack" np array
         # phi_t = np.stack(np.concatenate(phi_t, axis=0))
-        phi_t = torch.as_tensor(phi_t, device=device, dtype=torch.float32)
+        # phi_t = torch.as_tensor(phi_t, device=device, dtype=torch.float32)
 
         # * For t = 1, T do
         for t in count():
@@ -132,8 +132,8 @@ def main():
             phi_tplus1, r_t, term, trun, info = env.step(a_t)  # x_tplus1
             # first "stack" np array
             # phi_tplus1 = np.stack(np.concatenate(phi_tplus1, axis=0))
-            phi_tplus1 = torch.as_tensor(
-                phi_tplus1, device=device, dtype=torch.float32)
+            # phi_tplus1 = torch.as_tensor(
+            #     phi_tplus1, device=device, dtype=torch.float32)
             done_tplus1 = term or trun  # done flag (terminated or truncated)
 
             episode_rewards[episode] += r_t
@@ -190,7 +190,7 @@ def main():
     # * End For
 
 
-def select_action(num_actions, step, phi_t_tensor, policy_net, device):
+def select_action(num_actions, step, phi_t, policy_net, device):
     """ selects action, either random or from model """
 
     # epsilon = np.interp(self.step * NUM_ENVS, [0, EPSILON_DECAY], [EPSILON_START, EPSILON_END])
@@ -231,7 +231,8 @@ def select_action(num_actions, step, phi_t_tensor, policy_net, device):
         with torch.no_grad():
             print("select action ------------------------------")
             # convert phi_t to tensor
-            # phi_t_tensor = torch.tensor(phi_t, device=device)
+            phi_t_tensor = torch.as_tensor(
+                phi_t, device=device, dtype=torch.float32)
             phi_t_tensor = torch.stack([phi_t_tensor])
             policy_q = policy_net(phi_t_tensor)
             # max_q_indices = torch.argmax(policy_q, dim=1)
@@ -266,10 +267,12 @@ def calc_loss(minibatch, target_net, policy_net, device):
     # phi_tplus1s = [t[3] for t in minibatch]
     # dones = np.asarray([t[4] for t in minibatch])
 
-    phi_ts = torch.stack([t[0] for t in minibatch])
+    phi_ts = torch.stack(
+        [torch.as_tensor(t[0], device=device, dtype=torch.float32) for t in minibatch])
     a_ts = np.asarray([t[1] for t in minibatch])
     r_ts = np.asarray([t[2] for t in minibatch])
-    phi_tplus1s = torch.stack([t[3] for t in minibatch])
+    phi_tplus1s = torch.stack(
+        [torch.as_tensor(t[3], device=device, dtype=torch.float32) for t in minibatch])
     dones = np.asarray([t[4] for t in minibatch])
 
     phi_ts = torch.as_tensor(phi_ts, dtype=torch.float32, device=device)
