@@ -4,7 +4,7 @@ from collections import deque
 import random
 import time
 import torch
-from dqn import Network, init_weights
+from dqn import Network, select_action, REPLAY_START_SIZE ,init_weights
 # from game import Preprocessing
 from game import Game, Preprocessing, game_test
 import numpy as np
@@ -29,28 +29,31 @@ SQUARED_GRADIENT_MOMENTUM = 0.95  # RMSProp
 MIN_SQUARED_GRADIENT = 0.01  # RMSProp
 TARGET_NET_UPDATE_FREQ = int(1e4)  # C
 
-INITIAL_EXPLORATION = 1  # Initial value of epsilon in epsilon-greedy exploration
-FINAL_EXPLORATION = 0.1  # final value of epsilon in epsilon-greedy exploration
-FINAL_EXPLORATION_FRAME = int(1e6)  # num frames epsilon changes linearly
+# INITIAL_EXPLORATION = 1  # Initial value of epsilon in epsilon-greedy exploration
+# FINAL_EXPLORATION = 0.1  # final value of epsilon in epsilon-greedy exploration
+# FINAL_EXPLORATION_FRAME = int(1e6)  # num frames epsilon changes linearly
 
-REPLAY_START_SIZE = int(5e4)  # uniform random policy run before learning
-# REPLAY_START_SIZE = 35  # uniform random policy run before learning
+# REPLAY_START_SIZE = int(5e4)  # uniform random policy run before learning
+# # REPLAY_START_SIZE = 35  # uniform random policy run before learning
 
 
 PRINT_INFO_FREQ = int(1e3)
 
 
-# DECAY_SLOPE = (1.0-0.1)/(0.0-1e6)
-# delta y over delta x
-DECAY_SLOPE = (INITIAL_EXPLORATION-FINAL_EXPLORATION) / \
-    (REPLAY_START_SIZE-(REPLAY_START_SIZE+FINAL_EXPLORATION_FRAME))
-DECAY_C = INITIAL_EXPLORATION - (DECAY_SLOPE*REPLAY_START_SIZE)
+# # DECAY_SLOPE = (1.0-0.1)/(0.0-1e6)
+# # delta y over delta x
 # DECAY_SLOPE = (INITIAL_EXPLORATION-FINAL_EXPLORATION) / \
-#     (0.0-FINAL_EXPLORATION_FRAME)
+#     (REPLAY_START_SIZE-(REPLAY_START_SIZE+FINAL_EXPLORATION_FRAME))
+# DECAY_C = INITIAL_EXPLORATION - (DECAY_SLOPE*REPLAY_START_SIZE)
+# # DECAY_SLOPE = (INITIAL_EXPLORATION-FINAL_EXPLORATION) / \
+# #     (0.0-FINAL_EXPLORATION_FRAME)
 
 
 LOG_DIR = "./logs/"
 LOG_INTERVAL = 1000
+
+SAVE_DIR = "./models/"
+SAVE_INTERVAL = 10000
 
 
 def main():
@@ -60,7 +63,9 @@ def main():
     # print(time.time()-start)
 
     now = datetime.now()  # current date and time
-    log_path = LOG_DIR + now.strftime("%Y-%m-%d__%H-%M-%S")
+    time_str = now.strftime("%Y-%m-%d__%H-%M-%S")
+    log_path = LOG_DIR + time_str
+    save_path = SAVE_DIR + time_str + ".pkl"
     summary_writer = SummaryWriter(log_path)
 
     # if gpu is to be used
@@ -97,7 +102,7 @@ def main():
     # initialise policy_net
     policy_net = Network(num_actions, env_obs_space).to(device)
 
-    # policy_net.apply(init_weights)
+    policy_net.apply(init_weights)
 
     # * Initialize target action-value function Q_hat with weights Theta_bar = Theta
     # initialise target_net
@@ -210,6 +215,11 @@ def main():
                 summary_writer.add_scalar(
                     'Episodes', episode, global_step=step)
 
+            # Save
+            if step % SAVE_INTERVAL == 0 and step > REPLAY_START_SIZE:
+                print('Saving...')
+                policy_net.save(save_path)
+
             # if episode is over (no lives left etc), then reset and start new episode
             if done_tplus1:
                 # print(info)
@@ -233,62 +243,62 @@ def main():
     # * End For
 
 
-def select_action(num_actions, step, phi_t, policy_net, device):
-    """ selects action, either random or from model """
+# def select_action(num_actions, step, phi_t, policy_net, device):
+#     """ selects action, either random or from model """
 
-    # epsilon = np.interp(self.step * NUM_ENVS, [0, EPSILON_DECAY], [EPSILON_START, EPSILON_END])
-    # epsilon = np.interp(self.step,
-    #                     [0, FINAL_EXPLORATION_FRAME],
-    #                     [INITIAL_EXPLORATION, FINAL_EXPLORATION])
+#     # epsilon = np.interp(self.step * NUM_ENVS, [0, EPSILON_DECAY], [EPSILON_START, EPSILON_END])
+#     # epsilon = np.interp(self.step,
+#     #                     [0, FINAL_EXPLORATION_FRAME],
+#     #                     [INITIAL_EXPLORATION, FINAL_EXPLORATION])
 
-    # # y=mx+c to for step<=FINAL_EXPLORATION_FRAME else epsilon=FINAL_EXPLORATION
-    # epsilon = DECAY_SLOPE*step + \
-    #     1 if step <= FINAL_EXPLORATION_FRAME else FINAL_EXPLORATION
+#     # # y=mx+c to for step<=FINAL_EXPLORATION_FRAME else epsilon=FINAL_EXPLORATION
+#     # epsilon = DECAY_SLOPE*step + \
+#     #     1 if step <= FINAL_EXPLORATION_FRAME else FINAL_EXPLORATION
 
-    if step > (REPLAY_START_SIZE + FINAL_EXPLORATION_FRAME):
-        # if step > (5e4 + 1e6)
-        epsilon = FINAL_EXPLORATION
+#     if step > (REPLAY_START_SIZE + FINAL_EXPLORATION_FRAME):
+#         # if step > (5e4 + 1e6)
+#         epsilon = FINAL_EXPLORATION
 
-    elif step > REPLAY_START_SIZE:
-        # step must be <= (5e4 + 1e6) but greater than 5e4
-        # slope part of epsilon
-        # see pdf paper notes bottom of page 6 for working
-        epsilon = DECAY_SLOPE*step + DECAY_C
+#     elif step > REPLAY_START_SIZE:
+#         # step must be <= (5e4 + 1e6) but greater than 5e4
+#         # slope part of epsilon
+#         # see pdf paper notes bottom of page 6 for working
+#         epsilon = DECAY_SLOPE*step + DECAY_C
 
-    else:
-        # step must be <= 5e4, still in initialise replay mem state
-        # setting epsilon = 1 ensures that we always choose a random action
-        # random.random --> the interval [0, 1), which means greater than or equal to 0 and less than 1
-        epsilon = 1
+#     else:
+#         # step must be <= 5e4, still in initialise replay mem state
+#         # setting epsilon = 1 ensures that we always choose a random action
+#         # random.random --> the interval [0, 1), which means greater than or equal to 0 and less than 1
+#         epsilon = 1
 
-    rand_sample = random.random()
+#     rand_sample = random.random()
 
-    # if step >= REPLAY_START_SIZE:
-    #     print(f"epsilon: {epsilon}, rand_sample: {rand_sample}")
+#     # if step >= REPLAY_START_SIZE:
+#     #     print(f"epsilon: {epsilon}, rand_sample: {rand_sample}")
 
-    if rand_sample < epsilon:
-        action = random.randrange(num_actions)
-        # return torch.tensor([[random.randrange(2)]], device=self.device, dtype=torch.long)
-        # print(f"random action: {action}")
-    else:
-        with torch.no_grad():
-            # print("select action ------------------------------")
-            # convert phi_t to tensor
-            phi_t = np.asarray(phi_t)
-            phi_t_tensor = torch.as_tensor(
-                phi_t, device=device, dtype=torch.float32)
-            phi_t_tensor = torch.stack([phi_t_tensor])
-            policy_q = policy_net(phi_t_tensor)
-            # max_q_indices = torch.argmax(policy_q, dim=1)
-            max_q_index = torch.argmax(policy_q, dim=1)
-            # actions = max_q_indices.detach().tolist()
-            action = max_q_index.detach().item()
-            # return self.policy_net(state).max(1)[1].view(1, 1)
-            # print(f"policy_q action: {action}")
+#     if rand_sample < epsilon:
+#         action = random.randrange(num_actions)
+#         # return torch.tensor([[random.randrange(2)]], device=self.device, dtype=torch.long)
+#         # print(f"random action: {action}")
+#     else:
+#         with torch.no_grad():
+#             # print("select action ------------------------------")
+#             # convert phi_t to tensor
+#             phi_t = np.asarray(phi_t)
+#             phi_t_tensor = torch.as_tensor(
+#                 phi_t, device=device, dtype=torch.float32)
+#             phi_t_tensor = torch.stack([phi_t_tensor])
+#             policy_q = policy_net(phi_t_tensor)
+#             # max_q_indices = torch.argmax(policy_q, dim=1)
+#             max_q_index = torch.argmax(policy_q, dim=1)
+#             # actions = max_q_indices.detach().tolist()
+#             action = max_q_index.detach().item()
+#             # return self.policy_net(state).max(1)[1].view(1, 1)
+#             # print(f"policy_q action: {action}")
 
-            # print(f"action: {action}")
+#             # print(f"action: {action}")
 
-    return action
+#     return action
 
 
 def calc_loss(minibatch, target_net, policy_net, device):
