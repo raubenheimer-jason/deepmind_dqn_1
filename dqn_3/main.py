@@ -4,7 +4,7 @@ from collections import deque
 import random
 import time
 import torch
-from dqn import Network, select_action, REPLAY_START_SIZE ,init_weights
+from dqn import Network, select_action, REPLAY_START_SIZE, init_weights
 # from game import Preprocessing
 from game import Game, Preprocessing, game_test
 import numpy as np
@@ -36,6 +36,8 @@ TARGET_NET_UPDATE_FREQ = int(1e4)  # C
 # REPLAY_START_SIZE = int(5e4)  # uniform random policy run before learning
 # # REPLAY_START_SIZE = 35  # uniform random policy run before learning
 
+ACTION_REPEAT = 4  # Agent only sees every 4th input frame (repeat last action)
+
 
 PRINT_INFO_FREQ = int(1e3)
 
@@ -54,6 +56,7 @@ LOG_INTERVAL = 1000
 
 SAVE_DIR = "./models/"
 SAVE_INTERVAL = 10000
+SAVE_NEW_FILE_INTERVAL = int(1e5)
 
 
 def main():
@@ -65,7 +68,9 @@ def main():
     now = datetime.now()  # current date and time
     time_str = now.strftime("%Y-%m-%d__%H-%M-%S")
     log_path = LOG_DIR + time_str
-    save_path = SAVE_DIR + time_str + ".pkl"
+    # save_path = SAVE_DIR + time_str + ".pkl"
+    save_dir = f"{SAVE_DIR}/{time_str}/"  # different folder for each "run"
+    save_path = save_dir
     summary_writer = SummaryWriter(log_path)
 
     # if gpu is to be used
@@ -123,6 +128,12 @@ def main():
     rewards_buffer = deque([], maxlen=100)
     lengths_buffer = deque([], maxlen=100)
 
+    e_rw_test = []
+
+    # a_t = 1  # "FIRE" for very first action
+
+    a_t = 0  # defined here to do the "frame skipping"
+
     # * For episode = 1, M do
     for episode in count():
 
@@ -149,7 +160,12 @@ def main():
 
             # * With probability epsilon select a random action a_t
             # * otherwise select a_t = argmax_a Q(phi(s_t),a;Theta)
-            a_t = select_action(num_actions, step, phi_t, policy_net, device)
+            if step % ACTION_REPEAT == 0:
+                # "frame-skipping" technique where agent only selects a new action on every kth frame.
+                # running step requires a lot less computation than having the agent select action
+                # this allows roughly k times more games to be played without significantly increasing runtime
+                a_t = select_action(num_actions, step,
+                                    phi_t, policy_net, device)
 
             # * Execute action a_t in emulator and observe reward r_t and image x_t+1
             phi_tplus1, r_t, term, trun, info = env.step(a_t)  # x_tplus1
@@ -158,6 +174,8 @@ def main():
             # phi_tplus1 = torch.as_tensor(
             #     phi_tplus1, device=device, dtype=torch.float32)
             done_tplus1 = term or trun  # done flag (terminated or truncated)
+
+            # e_rw_test.append()
 
             episode_rewards[episode] += r_t
             episode_lengths[episode] += 1
@@ -216,8 +234,12 @@ def main():
                     'Episodes', episode, global_step=step)
 
             # Save
-            if step % SAVE_INTERVAL == 0 and step > REPLAY_START_SIZE:
+            # if step % SAVE_INTERVAL == 0 and step > REPLAY_START_SIZE:
+            if step % SAVE_INTERVAL == 0 and step > SAVE_NEW_FILE_INTERVAL:
                 print('Saving...')
+                # every 100k steps save a new version
+                if step % 100000 == 0:
+                    save_path = f"{save_path}_{step//1000}k.pkl"
                 policy_net.save(save_path)
 
             # if episode is over (no lives left etc), then reset and start new episode

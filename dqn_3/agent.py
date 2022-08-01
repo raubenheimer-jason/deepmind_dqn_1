@@ -15,7 +15,7 @@ import gym
 AGENT_HISTORY_LEN = 4  # Number of most recent frames given as input to the Q network
 # TARGET_NET_UPDATE_FREQ = int(1e4)  # C
 # GAMMA = 0.99  # discount factor used in Q-learning update
-ACTION_REPEAT = 4  # Agent only sees every 4th input frame (repeat last action)
+# ACTION_REPEAT = 4  # Agent only sees every 4th input frame (repeat last action)
 UPDATE_FREQ = 4  # Agent selects 4 actions between each pair of successive updates
 # LEARNING_RATE = 0.25e-3  # learning rate used by RMSProp
 # GRADIENT_MOMENTUM = 0.95  # RMSProp
