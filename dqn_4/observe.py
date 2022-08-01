@@ -110,7 +110,10 @@ def observe():
 
     # net.load('./atari_model.pack')
     # net.load("../models/2022-08-01__10-04-20.pkl", device)
-    net.load("../models/2022-08-01__11-24-20/_100k.pkl", device)
+    # net.load("../models/2022-08-01__11-24-20/_100k.pkl", device)
+    # net.load("../models/2022-08-01__16-05-09/300k.pkl", device)
+    net.load("../models/2022-08-01__18-01-36/300k.pkl", device)
+    print("done loading")
 
     obs = env.reset()
     beginning_episode = True
@@ -124,7 +127,7 @@ def observe():
         # step=-1 so we never select a random action
         action = select_action(num_actions, -1, obs, net, device)
 
-        print(f"action: {action}")
+        # print(f"action: {action}")
 
         if beginning_episode:
             action = 1  # "FIRE"
