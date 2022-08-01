@@ -69,8 +69,8 @@ def main():
     time_str = now.strftime("%Y-%m-%d__%H-%M-%S")
     log_path = LOG_DIR + time_str
     # save_path = SAVE_DIR + time_str + ".pkl"
-    save_dir = f"{SAVE_DIR}/{time_str}/"  # different folder for each "run"
-    save_path = save_dir
+    save_dir = f"{SAVE_DIR}{time_str}/"  # different folder for each "run"
+    # save_path = save_dir
     summary_writer = SummaryWriter(log_path)
 
     # if gpu is to be used
@@ -235,11 +235,11 @@ def main():
 
             # Save
             # if step % SAVE_INTERVAL == 0 and step > REPLAY_START_SIZE:
-            if step % SAVE_INTERVAL == 0 and step > SAVE_NEW_FILE_INTERVAL:
+            if step % SAVE_INTERVAL == 0 and step >= SAVE_NEW_FILE_INTERVAL:
                 print('Saving...')
                 # every 100k steps save a new version
-                if step % 100000 == 0:
-                    save_path = f"{save_path}_{step//1000}k.pkl"
+                if step % SAVE_NEW_FILE_INTERVAL == 0:
+                    save_path = f"{save_dir}{step//1000}k.pkl"
                 policy_net.save(save_path)
 
             # if episode is over (no lives left etc), then reset and start new episode

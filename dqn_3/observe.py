@@ -109,7 +109,8 @@ def observe():
     # net = net.to(device)
 
     # net.load('./atari_model.pack')
-    net.load("../models/2022-08-01__10-04-20.pkl", device)
+    # net.load("../models/2022-08-01__10-04-20.pkl", device)
+    net.load("../models/2022-08-01__11-24-20/_100k.pkl", device)
 
     obs = env.reset()
     beginning_episode = True
