@@ -43,6 +43,80 @@ def get_frames(p):
     return np.concatenate(p, axis=0)
 
 
+def display_batch(minibatch):
+
+    print("display minibatch")
+
+    for i, t in enumerate(minibatch):
+        print(i)
+        obs = t[0]
+        for f in obs:
+            plt.imshow(f)
+            plt.show()
+
+
+# class TransposeImageObs(gym.ObservationWrapper):
+#     def __init__(self, env):
+#         """ Convert to torch order (C, H, W)
+#             Currently H, W, C
+#         """
+#         super().__init__(env)
+#         # print(f"op stuff: {type(op)}")
+#         # print(f"op stuff: {op}")
+#         # assert len(op) == 3, "Op must have 3 dimensions"
+
+#         # # convert to C, H, W
+#         # _image = np.array(_image)
+#         # image = torch.from_numpy(_image)
+#         # image = image[np.newaxis, :]
+
+#         # print(image)
+#         # print(image.shape)
+
+#         # self.op = op
+
+#         # obs_shape = self.observation_space.shape
+#         # self.observation_space = gym.spaces.Box(
+#         #     self.observation_space.low[0, 0, 0],
+#         #     self.observation_space.high[0, 0, 0],
+#         #     [
+#         #         obs_shape[self.op[0]],
+#         #         obs_shape[self.op[1]],
+#         #         obs_shape[self.op[2]]
+#         #     ],
+#         #     dtype=self.observation_space.dtype)
+
+#     def observation(self, obs):
+#         # return obs.transpose(self.op[0], self.op[1], self.op[2])
+
+#         print(f"O type----- : {type(obs)}")
+
+
+#         # convert to C, H, W
+#         _image = np.array(obs)
+#         image = torch.from_numpy(_image)
+#         image = image[np.newaxis, :]
+
+#         print(f"type----- : {type(image)}")
+
+#         return image
+
+
+class ScaleGrey(gym.ObservationWrapper):
+    def __init__(self, env):
+        """ Scales the greyscale image to only have values between 0 and 1 (inclusive) 
+        """
+        super().__init__(env)
+
+    def observation(self, obs):
+
+        # print(f"type(obs): {type(obs)}")
+
+        obs = obs/255
+
+        return obs
+
+
 def main():
     now = datetime.now()  # current date and time
     time_str = now.strftime("%Y-%m-%d__%H-%M-%S")
@@ -63,7 +137,11 @@ def main():
                    new_step_api=True)
     env = gym.wrappers.ResizeObservation(env, (84, 84))
     env = gym.wrappers.GrayScaleObservation(env)
+    # env = ScaleGrey(env)
     env = gym.wrappers.FrameStack(env, 4, new_step_api=True)
+
+    # env = TransposeImageObs(env, op=[2, 0, 1])  # Convert to torch order (C, H, W)
+    # env = TransposeImageObs(env)  # Convert to torch order (C, H, W)
 
     #! need to add "max pix value" to observation...
     num_actions = env.action_space.n
@@ -89,6 +167,14 @@ def main():
     #         obs = env.reset()
     # print("done initialising replay buffer")
 
+    # policy_net = Network(env, device=device)
+    # target_net = Network(env, device=device)
+
+    # policy_net.apply(init_weights)
+
+    # policy_net = policy_net.to(device)
+    # target_net = target_net.to(device)
+
     # * Initialize action-value function Q with random weights Theta
     # initialise policy_net
     policy_net = Network(num_actions, env_obs_space).to(device)
@@ -100,7 +186,7 @@ def main():
     target_net.load_state_dict(policy_net.state_dict())
     # target_net.eval()
 
-    # https://pytorch.org/docs/stable/generated/torch.optim.RMSprop.html
+    # # https://pytorch.org/docs/stable/generated/torch.optim.RMSprop.html
     optimiser = torch.optim.RMSprop(policy_net.parameters(), lr=LEARNING_RATE, alpha=0.99,
                                     eps=1e-08, weight_decay=0, momentum=GRADIENT_MOMENTUM, centered=False, foreach=None)
 
@@ -146,6 +232,8 @@ def main():
             # * Execute action a_t in emulator and observe reward r_t and image x_t+1
             phi_tplus1, r_t, term, trun, info = env.step(a_t)  # x_tplus1
 
+            # print(f"phi_tplus1: {np.asarray(phi_tplus1).dtype}")
+
             # print(info["lives"])
 
             done_tplus1 = term or trun  # done flag (terminated or truncated)
@@ -168,12 +256,15 @@ def main():
                 # * Sample random minibatch of transitions (phi_j, a_j, r_j, phi_j+1) from D
                 minibatch = random.sample(replay_mem, BATCH_SIZE)
 
+                # display_batch(minibatch)
+
                 # * Set y_j = r_j if episode terminates at step j+1
                 # * otherwise set y_j = r_j + gamma * max_a_prime Q_hat(phi_j+1, a_prime; Theta_bar)
                 # * Perform a gradient descent step on (y_j - Q(phi_j, a_j; Theta))^2 with respect to the network parameters Theta
 
                 # calculate loss [ (y_j - Q(phi_j, a_j; Theta))^2 ]
                 loss = calc_loss(minibatch, target_net, policy_net, device)
+                # loss = policy_net.compute_loss(minibatch, target_net)
 
                 # Gradient Descent
                 optimiser.zero_grad()
@@ -218,6 +309,18 @@ def main():
                 break
 
             phi_t = phi_tplus1
+
+        #     if step > REPLAY_START_SIZE:
+
+        #         # for t in replay_mem:
+        #         #     print(t)
+
+        #         # print(replay_mem[0][0])
+
+        #         break
+
+        # if step > REPLAY_START_SIZE:
+        #     break
 
     # * End For
     # * End For

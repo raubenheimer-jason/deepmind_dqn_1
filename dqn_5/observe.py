@@ -112,17 +112,31 @@ def observe():
     # net.load("../models/2022-08-01__10-04-20.pkl", device)
     # net.load("../models/2022-08-01__11-24-20/_100k.pkl", device)
     # net.load("../models/2022-08-01__16-05-09/300k.pkl", device)
-    net.load("../models/2022-08-01__18-01-36/300k.pkl", device)
+    # net.load("../models/2022-08-01__18-01-36/300k.pkl", device)
+    # net.load("../models/2022-08-02__11-52-56/100k.pkl", device)
+    # net.load("../models/working_obs/200k.pkl", device)
+    net.load("../models/2022-08-02__11-52-56/300k.pkl", device)
     print("done loading")
 
     obs = env.reset()
     beginning_episode = True
+    # BEGIN_RANDOM_ACTIONS = 30
+    # epi_count = 0
     for t in itertools.count():
+
+        # epi_count += 1
+
         # if isinstance(obs[0], PytorchLazyFrames):
         #     act_obs = np.stack([o.get_frames() for o in obs])
         #     action = net.act(act_obs, 0.0)
         # else:
         #     action = net.act(obs, 0.0)
+
+        # if epi_count <= BEGIN_RANDOM_ACTIONS:
+        #     action = env.action_space.sample()
+        # else:
+        #     # step=-1 so we never select a random action
+        #     action = select_action(num_actions, -1, obs, net, device)
 
         # step=-1 so we never select a random action
         action = select_action(num_actions, -1, obs, net, device)
@@ -140,6 +154,7 @@ def observe():
         if term or trun:
             obs = env.reset()
             beginning_episode = True
+            # epi_count = 0
 
 
 if __name__ == "__main__":
