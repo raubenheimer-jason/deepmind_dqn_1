@@ -47,9 +47,9 @@ SAVE_DIR = "./models/"
 SAVE_INTERVAL = 10000
 SAVE_NEW_FILE_INTERVAL = int(1e5)
 
-LOGGING = False
 PRINTING = True
-SAVING = False
+LOGGING = True
+SAVING = True
 
 
 INITIAL_EXPLORATION = 1  # Initial value of epsilon in epsilon-greedy exploration
