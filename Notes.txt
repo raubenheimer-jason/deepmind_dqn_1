@@ -15,3 +15,19 @@ https://stackoverflow.com/questions/67674324/resize-a-state-of-a-gym-environment
 
 Deepmind code:
 https://github.com/deepmind/dqn
+
+
+https://www.youtube.com/watch?v=DrOp_MQGn9o&ab_channel=TheAIEpiphany
+
+Stable baselines
+https://github.com/Stable-Baselines-Team/stable-baselines
+
+
+https://github.com/berkeleydeeprlcourse/homework/blob/master/hw3/dqn_utils.py
+
+
+
+GOOD:
+https://danieltakeshi.github.io/2016/11/25/frame-skipping-and-preprocessing-for-deep-q-networks-on-atari-2600-games/
+
+https://towardsdatascience.com/tutorial-double-deep-q-learning-with-dueling-network-architectures-4c1b3fb7f756

@@ -24,7 +24,7 @@ def observe():
 
     net = Network(num_actions, env_obs_space).to(device)
 
-    net.load("../models/2022-08-02__11-52-56/300k.pkl", device)
+    net.load("../models/2022-08-02__11-52-56/2900k.pkl", device)
     print("done loading")
 
     obs = env.reset()
