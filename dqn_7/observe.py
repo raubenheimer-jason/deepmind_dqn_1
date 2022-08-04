@@ -32,7 +32,7 @@ def observe():
 
     # net.load("../models/2022-08-02__11-52-56/2900k.pkl", device)
     # net.load("../models/2022-08-03__08-52-14/100k.pkl", device)
-    net.load("../models/2022-08-03__11-00-27/100k.pkl", device)
+    net.load("../models/2022-08-03__11-00-27/400k.pkl", device)
     print("done loading")
 
     obs = env.reset()
@@ -40,9 +40,10 @@ def observe():
 
     # beginning_episode = True
 
-    num_rand_actions = randrange(30)
+    num_rand_actions = randrange(30*ACTION_REPEAT)
     # num_rand_actions = 30*ACTION_REPEAT
-    action = randrange(num_actions)
+    # action = randrange(num_actions)
+    action = 1
 
     episode_step = 0
 
@@ -71,7 +72,7 @@ def observe():
             obs = env.reset()
             state.add_frame(obs)
             # beginning_episode = True
-            num_rand_actions = randrange(30)
+            num_rand_actions = randrange(30*ACTION_REPEAT)
             # num_rand_actions = 30*ACTION_REPEAT
             print(f"num_rand_actions: {num_rand_actions}")
             episode_step = 0

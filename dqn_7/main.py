@@ -29,23 +29,27 @@ NO_OP_MAX = 30  # max num of "do nothing" actions performed by agent at the star
 
 FRAMES_SKIP = 4  # I added this...
 
-REPLAY_MEM_SIZE = int(1e6)
+# REPLAY_MEM_SIZE = int(1e6)
+REPLAY_MEM_SIZE = 1_000_000
 BATCH_SIZE = 32
 LEARNING_RATE = 0.25e-3  # learning rate used by RMSProp
 # LEARNING_RATE = 5e-5  # learning rate used by RMSProp <<-- from youtube dude...
 GRADIENT_MOMENTUM = 0.95  # RMSProp
 SQUARED_GRADIENT_MOMENTUM = 0.95  # RMSProp
 MIN_SQUARED_GRADIENT = 0.01  # RMSProp
-TARGET_NET_UPDATE_FREQ = int(1e4)  # C
+# TARGET_NET_UPDATE_FREQ = int(1e4)  # C
+TARGET_NET_UPDATE_FREQ = 10_000  # C
 ACTION_REPEAT = 4  # Agent only sees every 4th input frame (repeat last action)
-PRINT_INFO_FREQ = int(1e3)
+# PRINT_INFO_FREQ = int(1e3)
+PRINT_INFO_FREQ = 1_000
 
 LOG_DIR = "./logs/"
-LOG_INTERVAL = 1000
+LOG_INTERVAL = 1_000
 
 SAVE_DIR = "./models/"
-SAVE_INTERVAL = 10000
-SAVE_NEW_FILE_INTERVAL = int(1e5)
+SAVE_INTERVAL = 10_000
+# SAVE_NEW_FILE_INTERVAL = int(1e5)
+SAVE_NEW_FILE_INTERVAL = 100_000
 
 PRINTING = True
 LOGGING = True
