@@ -33,7 +33,7 @@ def observe():
     # net.load("../models/2022-08-02__11-52-56/2900k.pkl", device)
     # net.load("../models/2022-08-03__08-52-14/100k.pkl", device)
     # net.load("../models/2022-08-03__11-00-27/400k.pkl", device)
-    net.load("../models/working_obs/200k.pkl", device)
+    net.load("../models/working_obs/100k.pkl", device)
     print("done loading")
 
     obs = env.reset()

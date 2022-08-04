@@ -29,11 +29,14 @@ NO_OP_MAX = 30  # max num of "do nothing" actions performed by agent at the star
 
 FRAMES_SKIP = 4  # I added this...
 
+REWARD_MAX = 1.0
+REWARD_MIN = -1.0
+
 # REPLAY_MEM_SIZE = int(1e6)
 REPLAY_MEM_SIZE = 1_000_000
 BATCH_SIZE = 32
-# LEARNING_RATE = 0.25e-3  # learning rate used by RMSProp
-LEARNING_RATE = 5e-5  # learning rate used by RMSProp <<-- from youtube dude...
+LEARNING_RATE = 0.25e-3  # learning rate used by RMSProp
+# LEARNING_RATE = 5e-5  # learning rate used by RMSProp <<-- from youtube dude...
 GRADIENT_MOMENTUM = 0.95  # RMSProp
 SQUARED_GRADIENT_MOMENTUM = 0.95  # RMSProp
 MIN_SQUARED_GRADIENT = 0.01  # RMSProp
@@ -216,15 +219,16 @@ def select_action(num_actions, step, phi_t, policy_net, device):
     if rand_sample < epsilon:
         action = random.randrange(num_actions)
     else:
-        phi_t_np = np.asarray([phi_t])
-        phi_t_tensor = torch.as_tensor(
-            phi_t_np, device=device, dtype=torch.float32)/255
-        # phi_t_tensor = torch.as_tensor(
-        #     phi_t, device=device, dtype=torch.float32)/255
-        # phi_t_tensor = torch.div(phi_t_tensor, 255)
-        policy_q = policy_net(phi_t_tensor)
-        max_q_index = torch.argmax(policy_q, dim=1)
-        action = max_q_index.detach().item()
+        with torch.no_grad():
+            phi_t_np = np.asarray([phi_t])
+            phi_t_tensor = torch.as_tensor(
+                phi_t_np, device=device, dtype=torch.float32)/255
+            # phi_t_tensor = torch.as_tensor(
+            #     phi_t, device=device, dtype=torch.float32)/255
+            # phi_t_tensor = torch.div(phi_t_tensor, 255)
+            policy_q = policy_net(phi_t_tensor)
+            max_q_index = torch.argmax(policy_q, dim=1)
+            action = max_q_index.detach().item()
 
     return action
 
@@ -405,7 +409,7 @@ def main():
 
     rewards_buffer = deque([], maxlen=100)
     lengths_buffer = deque([], maxlen=100)
-    loss_buffer = deque([], maxlen=100)
+    # loss_buffer = deque([], maxlen=100)
 
     a_t = 0  # defined here to do the "frame skipping"
 
@@ -416,6 +420,9 @@ def main():
     state = State()
 
     training_episodes = 0
+
+    # max_reward = 0
+    # min_reward = 2.0
 
     # * For episode = 1, M do
     for episode in count():
@@ -451,6 +458,18 @@ def main():
             # * Execute action a_t in emulator and observe reward r_t and image x_t+1
             # phi_tplus1, r_t, term, trun, info = env.step(a_t)  # x_tplus1
             new_frame, r_t, term, trun, info = env.step(a_t)
+
+            # clip reward
+            if r_t > REWARD_MAX:
+                r_t = REWARD_MAX
+            if r_t < REWARD_MIN:
+                r_t = REWARD_MIN
+
+            # if r_t > max_reward:
+            #     max_reward = r_t
+
+            # if r_t < min_reward:
+            #     min_reward = r_t
 
             # * Set s_t+1 = s_t,a_t,x_t+1 and preprocess phi_t+1 = phi(s_t+1)
             state.add_frame(new_frame)
@@ -528,6 +547,7 @@ def main():
                     print('Avg Rew (mean last 100 episodes)', rew_mean)
                     print('Avg Ep steps (mean last 100 episodes)', len_mean)
                     # print('Avg loss (mean last 100 episodes)', loss_mean)
+                    # print('Min reward', min_reward)
                     print('(training) Episodes', training_episodes)
 
                 if LOGGING:
