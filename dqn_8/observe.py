@@ -33,7 +33,7 @@ def observe():
     # net.load("../models/2022-08-02__11-52-56/2900k.pkl", device)
     # net.load("../models/2022-08-03__08-52-14/100k.pkl", device)
     # net.load("../models/2022-08-03__11-00-27/400k.pkl", device)
-    net.load("../models/working_obs/100k.pkl", device)
+    net.load("../models/working_obs/200k_2.pkl", device)
     print("done loading")
 
     obs = env.reset()
@@ -42,7 +42,7 @@ def observe():
     # beginning_episode = True
 
     # num_rand_actions = randrange(30*ACTION_REPEAT)
-    num_rand_actions = 0
+    num_rand_actions = 10
     # num_rand_actions = 30*ACTION_REPEAT
     # action = randrange(num_actions)
     action = 1
@@ -53,10 +53,11 @@ def observe():
         # step=-1 so we never select a random action
 
         if episode_step % ACTION_REPEAT == 0:
-            if episode_step < num_rand_actions:
+            if episode_step < num_rand_actions*ACTION_REPEAT:
                 # random number of random actions at the start of each episode
-                action = env.action_space.sample()
-                print(f"{episode_step}\trandom action: {action}")
+                # action = env.action_space.sample()
+                action = 0
+                print(f"{episode_step}\tno-op action: {action}")
             else:
                 phi_t = state.get_state()
                 action = select_action(num_actions, -1, phi_t, net, device)
@@ -70,17 +71,17 @@ def observe():
         state.add_frame(obs)
         time.sleep(0.02)
 
+        episode_step += 1
+
         if term or trun:
             obs = env.reset()
             state.add_frame(obs)
             # beginning_episode = True
             # num_rand_actions = randrange(30*ACTION_REPEAT)
-            num_rand_actions = 0
+            num_rand_actions = 10
             # num_rand_actions = 30*ACTION_REPEAT
             print(f"num_rand_actions: {num_rand_actions}")
             episode_step = 0
-
-        episode_step += 1
 
 
 if __name__ == "__main__":
